@@ -1,4 +1,8 @@
 function sendData(inputData) {
+    $('#scanData').text(inputData)
+    setTimeout(() => {
+        $('#scanData').text('Scanning...')
+    }, 3000);
     $.ajax({
         type: "POST",
         url: "/sendDataArduino",  // URL to send the request to
@@ -9,7 +13,7 @@ function sendData(inputData) {
             console.log("Response from server:", response);
             // Example: Do something with the response
             if (response.success) {
-                alert("Data sent successfully!");
+                getAllData();
             } else {
                 alert("Error sending data: " + response.message);
             }

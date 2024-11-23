@@ -38,6 +38,24 @@ def insert_data(recycle_type):
     finally:
         connection.close()
 
+def get_all_records():
+    """Retrieves all records from the recycle_data table and returns them as a list of dictionaries."""
+    connection = sqlite3.connect(DATABASE_NAME)
+    try:
+        cursor = connection.cursor()
+        # SQL command to fetch all records
+        SELECT_QUERY = "SELECT recycle_type, timestamp FROM recycle_data ORDER BY timestamp DESC;"
+        cursor.execute(SELECT_QUERY)
+        rows = cursor.fetchall()
+        # Convert rows to a list of dictionaries
+        records = [{"recycle_type": row[0], "timestamp": row[1]} for row in rows]
+        return records
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return []
+    finally:
+        connection.close()
+
 if __name__ == "__main__":
     # Create the database and table
     create_database_and_table()
@@ -47,3 +65,7 @@ if __name__ == "__main__":
     # insert_data("plastic")
     # insert_data("metal")
     # insert_data("paper")
+
+    # Fetch and print all records
+    records = get_all_records()
+    print("All records:", records)

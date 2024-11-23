@@ -27,7 +27,7 @@
                     <div class="col-12 col-md-12">
                         <h3 style="margin-top: 500px;" class="text-light">Scan item:</h3>
                         <div class="rounded-5 d-flex justify-content-center align-items-center" style="height: 150px; border: 5px solid green">
-                            <p class="text-center text-light">Scanning...</p>
+                            <h3 id="scanData" class="text-center text-light">Scanning...</h3>
                         </div>
                     </div>
                 </div>
@@ -38,28 +38,17 @@
                 <button class="btn btn-success mb-3 mt-3 w-100" onclick="sendData($('#inputData').val())">Submit Trash</button>
 
                 <h3 class="text-light">Scan Logs</h3>
-                <table class="text-light" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th style="width: 50%;">Date</th>
-                            <th style="width: 50%;">Type of Object</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="width: 50%;" class="pb-2 pt-2">November 23, 2024 9:20:21</td>
-                            <td style="width: 50%;" class="pb-2 pt-2">Plastic</td>
-                        </tr>
-                        <tr>
-                            <td style="width: 50%;" class="pb-2 pt-2">November 23, 2024 9:19:23</td>
-                            <td style="width: 50%;" class="pb-2 pt-2">Plastic</td>
-                        </tr>
-                        <tr>
-                            <td style="width: 50%;" class="pb-2 pt-2">November 23, 2024 9:19:01</td>
-                            <td style="width: 50%;" class="pb-2 pt-2">Plastic</td>
-                        </tr>
-                    </tbody>
-                </table>                
+                <div style="height: 500px; overflow:auto">
+                    <table class="text-light" style="width: 100%;">
+                        <thead class="sticky-top bg-dark">
+                            <tr>
+                                <th style="width: 50%;">Date</th>
+                                <th style="width: 50%;">Type of Object</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataLogs"></tbody>
+                    </table>   
+                </div>             
             </div>
         </div>
     </div>
