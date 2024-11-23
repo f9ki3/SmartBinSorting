@@ -34,8 +34,9 @@
             </div>
             <div class="col-12 col-md-6">
                 <h3 class="text-light">Data Input</h3>
-                <input type="text" class="form-control" placeholder="Enter type of trash">
-                <button class="btn btn-success mb-3 mt-3 w-100">Submit Trash</button>
+                <input type="text" id="inputData" class="form-control" placeholder="Enter type of trash">
+                <button class="btn btn-success mb-3 mt-3 w-100" id="sendData">Submit Trash</button>
+
                 <h3 class="text-light">Scan Logs</h3>
                 <table class="text-light" style="width: 100%;">
                     <thead>
@@ -64,6 +65,64 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+        let port;
+        
+        // Function to connect to Arduino
+        async function connectToArduino() {
+            try {
+                // Request the user to select the serial port, which should include `/dev/ttyACM0`
+                port = await navigator.serial.requestPort();  
+                
+                // Open the serial port with a baud rate of 9600
+                await port.open({ baudRate: 9600 });  
+                alert("Connected to Arduino!");
+        
+                // Optionally, add an event listener to close the port when needed
+                port.addEventListener("disconnect", () => {
+                    console.log("Port disconnected.");
+                    alert("Arduino disconnected.");
+                });
+            } catch (error) {
+                console.error("Error connecting to Arduino:", error);
+                alert("Failed to connect to Arduino.");
+            }
+        }
+        
+        // Send message to Arduino
+        async function sendToArduino(message) {
+            try {
+                // Ensure the port is open before writing
+                if (!port || port.readable.locked || port.writable.locked) {
+                    console.log("Port is either not open or locked.");
+                    alert("Port is not open or locked. Please connect to the Arduino.");
+                    return;
+                }
+                
+                // Create a writer to send data to the port
+                const writer = port.writable.getWriter();
+                const encoder = new TextEncoder();
+                await writer.write(encoder.encode(message));  // Send the encoded message to Arduino
+                writer.releaseLock();  // Release the lock after writing
+            } catch (error) {
+                console.error("Error sending data to Arduino:", error);
+                alert("Failed to send data to Arduino.");
+            }
+        }
+        
+        // Event listener for submit button
+        document.getElementById('sendData').addEventListener('click', function () {
+            const inputData = document.getElementById('inputData').value.trim();
+            if (inputData) {
+                sendToArduino(inputData);  // Send the input data to Arduino when the button is clicked
+            } else {
+                alert("Please enter a valid trash type.");
+            }
+        });
+        
+        // Connect button (use an inline button or another trigger to connect)
+        document.getElementById('connectButton')?.addEventListener('click', connectToArduino);
+        </script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
 </body>
