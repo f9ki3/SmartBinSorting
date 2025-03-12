@@ -4,9 +4,8 @@ Servo servoPlastic;  // Servo for plastic
 Servo servoMetal;    // Servo for metal
 Servo servoPaper;    // Servo for paper
 
-const int pinPlastic = 9;  // Pin for plastic servo
-const int pinMetal = 10;   // Pin for metal servo
-const int pinPaper = 11;   // Pin for paper servo
+const int servo1 = 8;  // Pin for plastic servo
+const int servo2 = 9;   // Pin for metal servo
 
 void setup() {
   // Initialize serial communication

@@ -1,48 +1,61 @@
+const MODEL_PATH = "./static/waste-sort/";
 
-const video = document.getElementById('camera');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
+let model, webcam, maxPredictions;
+let canSendData = true; // Flag to control sending interval
 
-// Load the Edge Impulse model
-async function loadModel() {
-    const model = await tf.loadGraphModel('/models/model.json');
-    console.log('Model loaded successfully');
-    return model;
+// Load the image model and setup the webcam
+async function init() {
+  const modelURL = MODEL_PATH + "model.json";
+  const metadataURL = MODEL_PATH + "metadata.json";
+
+  // Load the model and metadata
+  model = await tmImage.load(modelURL, metadataURL);
+  maxPredictions = model.getTotalClasses();
+
+  // Setup webcam
+  const flip = true; // whether to flip the webcam
+  webcam = new tmImage.Webcam(500, 400, flip); // Initial size
+  await webcam.setup(); // request access to the webcam
+  await webcam.play();
+  window.requestAnimationFrame(loop);
+
+  // Append webcam to DOM
+  document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+  // Apply styling to make the webcam responsive
+  webcam.canvas.style.width = "100%"; // Full width
+  webcam.canvas.style.height = "auto"; // Maintain aspect ratio
+  webcam.canvas.style.border = "5px solid green"; // Green border
+  webcam.canvas.style.borderRadius = "30px"; // Rounded corners
 }
 
-// Access the camera
-async function startCamera() {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-    video.onloadedmetadata = () => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        detectObjects();
-    };
+async function loop() {
+  webcam.update(); // update the webcam frame
+  await predict();
+  window.requestAnimationFrame(loop);
 }
 
-// Perform object detection
-async function detectObjects() {
-    const model = await loadModel();
+// Run the webcam image through the image model
+async function predict() {
+  const prediction = await model.predict(webcam.canvas);
 
-    async function detectFrame() {
-        const tfImg = tf.browser.fromPixels(video).expandDims(0).toFloat();
-        const predictions = await model.executeAsync(tfImg);
+  // Find the highest probability prediction
+  const topPrediction = prediction.reduce(
+    (max, pred) => (pred.probability > max.probability ? pred : max),
+    prediction[0]
+  );
+  let data1 = topPrediction.className;
 
-        // Clear canvas and draw results
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        predictions.forEach(pred => {
-            const [x, y, width, height] = pred.bbox;
-            ctx.strokeStyle = 'red';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(x, y, width, height);
-            ctx.fillText(pred.class, x, y > 10 ? y - 5 : y + 15);
-        });
+  // Send data only if allowed, then disable sending for 5 seconds
+  if (canSendData) {
+    console.log(data1);
+    sendData(data1);
 
-        requestAnimationFrame(detectFrame);
-    }
-
-    detectFrame();
+    canSendData = false;
+    setTimeout(() => {
+      canSendData = true;
+    }, 10000);
+  }
 }
 
-startCamera();
+init();

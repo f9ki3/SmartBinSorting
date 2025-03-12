@@ -1,4 +1,4 @@
-#!/home/f9ki3/Desktop/SmartBinSorting/venv/bin/python
+#!/Users/mac/Desktop/SmartBinSorting/venv/bin/python3.13
 # -*- coding: utf-8 -*-
 import re
 import sys

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 import serial
 import time
 from data_logs import *
@@ -6,7 +6,11 @@ from data_logs import *
 app = Flask(__name__)
 
 # Initialize serial communication with Arduino (change the port if necessary)
-arduino = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # Adjust port to match your Arduino or change COM3
+arduino = serial.Serial('/dev/cu.usbserial-1430', 9600, timeout=1)  # Adjust port to match your Arduino or change COM3
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    return send_from_directory('static', filename)
 
 @app.route('/')
 def basuraHome():
@@ -30,7 +34,8 @@ def sendDataArduino():
         # Optionally, you can read response from Arduino (if needed)
         response = arduino.readline().decode('utf-8').strip()
 
-        insert_data(input_data)
+        if input_data != 'none':
+            insert_data(input_data)
 
         # Send a JSON response back to the client
         return jsonify({'success': True, 'message': 'Data sent to Arduino', 'data': input_data, 'arduino_response': response})
