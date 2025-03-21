@@ -6,7 +6,7 @@ from data_logs import *
 app = Flask(__name__)
 
 # Initialize serial communication with Arduino (change the port if necessary)
-arduino = serial.Serial('/dev/cu.usbserial-1430', 9600, timeout=1)  # Adjust port to match your Arduino or change COM3
+arduino = serial.Serial('/dev/cu.usbserial-1410', 9600, timeout=1)  # Adjust port to match your Arduino or change COM3
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
