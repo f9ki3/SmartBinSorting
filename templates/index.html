@@ -12,7 +12,7 @@
     />
   </head>
   <body style="background-color: rgb(14, 14, 14)">
-    <div>
+    <div class="sticky-top">
       <div style="background-color: green" class="p-3">
         <div class="container">
           <h3 class="text-light fw-bolder">Waste Sorting Trash Bin</h3>
@@ -61,7 +61,7 @@
           </button>
 
           <h3 class="text-light">Scan Logs</h3>
-          <div style="height: 500px; overflow: auto">
+          <div style="height: 700px; overflow: auto">
             <table class="text-light" style="width: 100%">
               <thead class="sticky-top bg-dark">
                 <tr>
@@ -71,6 +71,35 @@
               </thead>
               <tbody id="dataLogs"></tbody>
             </table>
+          </div>
+        </div>
+
+        <div class="col-12">
+          <h1 class="text-light">Dashboards</h1>
+
+          <!-- Donut Charts -->
+          <div class="row">
+            <div class="col-3">
+              <div id="donut-plastic"></div>
+              <p class="text-light text-center">Plastic</p>
+            </div>
+            <div class="col-3">
+              <div id="donut-paper"></div>
+              <p class="text-light text-center">Paper</p>
+            </div>
+            <div class="col-3">
+              <div id="donut-metal"></div>
+              <p class="text-light text-center">Metal</p>
+            </div>
+            <div class="col-3">
+              <div id="donut-general"></div>
+              <p class="text-light text-center">General</p>
+            </div>
+          </div>
+
+          <!-- Bar Chart -->
+          <div class="mt-4">
+            <div id="bar-chart"></div>
           </div>
         </div>
       </div>

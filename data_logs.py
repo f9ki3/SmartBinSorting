@@ -28,7 +28,6 @@ def insert_data(recycle_type):
     connection = sqlite3.connect(DATABASE_NAME)
     try:
         cursor = connection.cursor()
-        # SQL command to insert data
         INSERT_QUERY = "INSERT INTO recycle_data (recycle_type) VALUES (?);"
         cursor.execute(INSERT_QUERY, (recycle_type,))
         connection.commit()
@@ -39,15 +38,13 @@ def insert_data(recycle_type):
         connection.close()
 
 def get_all_records():
-    """Retrieves all records from the recycle_data table and returns them as a list of dictionaries."""
+    """Retrieves all records from the recycle_data table."""
     connection = sqlite3.connect(DATABASE_NAME)
     try:
         cursor = connection.cursor()
-        # SQL command to fetch all records
         SELECT_QUERY = "SELECT recycle_type, timestamp FROM recycle_data ORDER BY timestamp DESC;"
         cursor.execute(SELECT_QUERY)
         rows = cursor.fetchall()
-        # Convert rows to a list of dictionaries
         records = [{"recycle_type": row[0], "timestamp": row[1]} for row in rows]
         return records
     except sqlite3.Error as e:
@@ -56,16 +53,42 @@ def get_all_records():
     finally:
         connection.close()
 
+def get_recycle_type_counts():
+    """Returns a dictionary with counts for each recycle_type."""
+    connection = sqlite3.connect(DATABASE_NAME)
+    try:
+        cursor = connection.cursor()
+        COUNT_QUERY = """
+        SELECT recycle_type, COUNT(*) as count
+        FROM recycle_data
+        GROUP BY recycle_type;
+        """
+        cursor.execute(COUNT_QUERY)
+        rows = cursor.fetchall()
+        result = {row[0]: row[1] for row in rows}
+        return result
+    except sqlite3.Error as e:
+        print(f"An error occurred while counting: {e}")
+        return {}
+    finally:
+        connection.close()
+
 if __name__ == "__main__":
     # Create the database and table
     create_database_and_table()
 
-    # Example of inserting data
-    # Uncomment to test the insert functionality
+    # Example insertions (uncomment to test)
     # insert_data("plastic")
     # insert_data("metal")
     # insert_data("paper")
+    # insert_data("general")
 
     # Fetch and print all records
     records = get_all_records()
     print("All records:", records)
+
+    # Count each type and print the summary
+    counts = get_recycle_type_counts()
+    print("Recycle Type Counts:")
+    for type_, count in counts.items():
+        print(f"{type_.capitalize()}: {count}")
