@@ -9,7 +9,7 @@ import os
 app = Flask(__name__)
 
 # Initialize serial communication with Arduino (change the port if necessary)
-arduino = serial.Serial('/dev/cu.usbserial-1430', 9600, timeout=1)  # Adjust port to match your Arduino or change COM3
+# arduino = serial.Serial('/dev/cu.usbserial-1430', 9600, timeout=1)  # Adjust port to match your Arduino or change COM3
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
@@ -101,26 +101,26 @@ def retrieve_data():
     except Exception as e:
         return jsonify({"message": f"Error: {str(e)}"}), 400
 
-@app.route('/sendDataArduino', methods=['POST'])
-def sendDataArduino():
-    input_data = request.form.get('data')  # Get data from the form (or AJAX)
-    if input_data:
-        # Send the data to Arduino via serial
-        arduino.write(input_data.encode())  # Send string to Arduino
+# @app.route('/sendDataArduino', methods=['POST'])
+# def sendDataArduino():
+#     input_data = request.form.get('data')  # Get data from the form (or AJAX)
+#     if input_data:
+#         # Send the data to Arduino via serial
+#         arduino.write(input_data.encode())  # Send string to Arduino
 
-        # Wait for Arduino to process the data
-        time.sleep(2)  # Sleep for 2 seconds to allow Arduino to react
+#         # Wait for Arduino to process the data
+#         time.sleep(2)  # Sleep for 2 seconds to allow Arduino to react
     
-        # Optionally, you can read response from Arduino (if needed)
-        response = arduino.readline().decode('utf-8').strip()
+#         # Optionally, you can read response from Arduino (if needed)
+#         response = arduino.readline().decode('utf-8').strip()
 
-        if input_data != 'none':
-            insert_data(input_data)
+#         if input_data != 'none':
+#             insert_data(input_data)
 
-        # Send a JSON response back to the client
-        return jsonify({'success': True, 'message': 'Data sent to Arduino', 'data': input_data, 'arduino_response': response})
-    else:
-        return jsonify({'success': False, 'message': 'No data received'})
+#         # Send a JSON response back to the client
+#         return jsonify({'success': True, 'message': 'Data sent to Arduino', 'data': input_data, 'arduino_response': response})
+#     else:
+#         return jsonify({'success': False, 'message': 'No data received'})
 
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
