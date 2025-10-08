@@ -19,6 +19,10 @@ def static_files(filename):
 def basuraHome():
     return render_template('index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
 @app.route('/getAllData')
 def getAllData():
     data = get_all_records()
@@ -101,26 +105,24 @@ def retrieve_data():
     except Exception as e:
         return jsonify({"message": f"Error: {str(e)}"}), 400
 
-# @app.route('/sendDataArduino', methods=['POST'])
-# def sendDataArduino():
-#     input_data = request.form.get('data')  # Get data from the form (or AJAX)
-#     if input_data:
-#         # Send the data to Arduino via serial
-#         arduino.write(input_data.encode())  # Send string to Arduino
-
-#         # Wait for Arduino to process the data
-#         time.sleep(2)  # Sleep for 2 seconds to allow Arduino to react
+@app.route('/sendDataArduino', methods=['POST'])
+def sendDataArduino():
+    input_data = request.form.get('data')  # Get data from the AJAX request
     
-#         # Optionally, you can read response from Arduino (if needed)
-#         response = arduino.readline().decode('utf-8').strip()
+    if input_data and input_data != 'none':
+        # Insert the data into your database
+        insert_data(input_data)  # Make sure this function handles DB insertion
 
-#         if input_data != 'none':
-#             insert_data(input_data)
-
-#         # Send a JSON response back to the client
-#         return jsonify({'success': True, 'message': 'Data sent to Arduino', 'data': input_data, 'arduino_response': response})
-#     else:
-#         return jsonify({'success': False, 'message': 'No data received'})
-
+        # Return a JSON response back to the client
+        return jsonify({
+            'success': True,
+            'message': 'Data inserted successfully',
+            'data': input_data
+        })
+    else:
+        return jsonify({
+            'success': True,
+            'message': 'No valid data received'
+        })
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)

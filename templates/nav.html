@@ -1,0 +1,46 @@
+<div class="sticky-top d-none d-md-block">
+  <div class="p-3" style="background-color: green">
+    <div
+      class="container d-flex flex-column flex-md-row align-items-center justify-content-between"
+    >
+      <h3 class="text-light fw-bolder mb-2 mb-md-0">Waste Sorting Trash Bin</h3>
+      <div class="d-flex flex-column flex-md-row gap-3">
+        <a class="text-decoration-none text-light" href="/">Scan Trash</a>
+        <a class="text-decoration-none text-light" href="/dashboard"
+          >Dashboard</a
+        >
+      </div>
+    </div>
+  </div>
+</div>
+<nav class="d-md-none custom-shadow navbar fixed-bottom bg-dark text-light">
+  <div class="container d-flex justify-content-around">
+    <!-- Scan Button -->
+    <a
+      href="/"
+      class="text-light text-decoration-none d-flex flex-column text-center flex-column"
+    >
+      <i class="bi bi-camera-fill" style="font-size: 1.5rem"></i>
+      <span style="font-size: 0.8rem">Scan</span>
+    </a>
+
+    <!-- Dashboard Button -->
+    <a
+      href="/dashboard"
+      class="text-light text-decoration-none d-flex flex-column text-center flex-column"
+    >
+      <i class="bi bi-speedometer2" style="font-size: 1.5rem"></i>
+      <span style="font-size: 0.8rem">Dashboard</span>
+    </a>
+  </div>
+</nav>
+<style>
+  /* Custom light green shadow */
+  .custom-shadow {
+    box-shadow: 0 -10px 20px rgba(244, 255, 244, 0.3); /* x-offset, y-offset, blur, color */
+  }
+</style>
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+/>

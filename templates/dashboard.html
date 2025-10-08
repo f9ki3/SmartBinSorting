@@ -15,76 +15,43 @@
     <!-- Mobile Bottom Navigation -->
     {% include 'nav.html' %}
 
-    <!-- Bootstrap Icons CDN (if not already included) -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
-    />
-
     <div class="container">
-      <div class="row mt-5">
-        <div class="col-12 col-md-6">
-          <div class="row">
-            <div class="col-12 col-md-12">
-              <h3 style="margin-top: auto" class="text-light">Scan item:</h3>
-              <div
-                class="rounded-5 d-flex justify-content-center align-items-center"
-                style="height: 100px; border: 5px solid green"
-              >
-                <h3 id="scanData" class="text-center text-light">
-                  Scanning...
-                </h3>
-              </div>
-            </div>
-            <div class="col-12 col-md-12">
-              <h3 class="text-light mt-3">Scanning Camera</h3>
-              <div id="webcam-container"></div>
-              <canvas id="canvas"></canvas>
+      <div class="row mb-5 mt-5">
+        <div class="col-12">
+          <h1 class="text-light">Waste Level</h1>
 
-              <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-              <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-              <script type="text/javascript"></script>
+          <!-- Donut Charts -->
+          <div class="row">
+            <div class="col-6 col-md-3">
+              <div id="donut-plastic"></div>
+              <p class="text-light text-center">Plastic</p>
+            </div>
+            <div class="col-6 col-md-3">
+              <div id="donut-paper"></div>
+              <p class="text-light text-center">Paper</p>
+            </div>
+            <div class="col-6 col-md-3">
+              <div id="donut-metal"></div>
+              <p class="text-light text-center">Metal</p>
+            </div>
+            <div class="col-6 col-md-3">
+              <div id="donut-general"></div>
+              <p class="text-light text-center">General</p>
             </div>
           </div>
-        </div>
-        <div class="col-12 col-md-6">
-          <!-- <h3 class="text-light">Data Input</h3> -->
-          <!-- <input
-            type="text"
-            id="inputData"
-            class="form-control"
-            placeholder="Enter type of trash"
-          /> -->
-          <!-- <button
-            class="btn btn-success mb-3 mt-3 w-100"
-            onclick="sendData($('#inputData').val())"
-          >
-            Submit Trash
-          </button> -->
-          <h3 class="text-light">Scan Logs</h3>
-          <button
-            style="background-color: green"
-            class="btn text-white mb-3 btn w-100"
-            id="connect-btn"
-          >
-            Connect Arduino
-          </button>
-          <div style="height: 700px; overflow: auto">
-            <table class="text-light" style="width: 100%">
-              <thead class="sticky-top bg-dark">
-                <tr>
-                  <th style="width: 50%">Date</th>
-                  <th style="width: 50%">Type of Object</th>
-                </tr>
-              </thead>
-              <tbody id="dataLogs"></tbody>
-            </table>
+
+          <!-- Bar Chart -->
+          <div class="mt-4">
+            <h1 class="text-light">Garbage Summary</h1>
+            <div id="bar-chart"></div>
           </div>
         </div>
       </div>
     </div>
 
-    {% include 'script.html' %}
+    <!-- {% include 'script.html' %} -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
       integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
@@ -97,6 +64,7 @@
     ></script>
   </body>
 </html>
+
 <script>
   let lastData = { plastic: 0, paper: 0, metal: 0, waste: 0 };
 
@@ -131,7 +99,7 @@
                 Math.max(0, paper + waste + plastic + metal - value),
               ],
               labels: [label, "Waste Level"],
-              colors: ["#E0E0E0", "#00E396"],
+              colors: ["#E0E0E0", "green"],
               legend: { show: false },
               dataLabels: {
                 formatter: function (val) {
@@ -223,7 +191,7 @@
               xaxis: {
                 categories: ["Plastic", "Paper", "Metal", "Waste"],
               },
-              colors: ["#00E396", "#E0E0E0", "#FF4560", "#008FFB"],
+              colors: ["green", "green", "green", "green"],
               dataLabels: {
                 enabled: true,
                 formatter: function (val) {
@@ -279,5 +247,3 @@
   fetchAndUpdateDonutCharts();
   fetchAndUpdateBarChart();
 </script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
