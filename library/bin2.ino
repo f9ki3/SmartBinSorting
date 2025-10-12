@@ -4,15 +4,15 @@
 #include <WiFiClientSecureBearSSL.h>
 
 // Pins for Bin1 & Bin2
-const int trigPin1 = D1;
-const int echoPin1 = D2;
-const int trigPin2 = D5;
-const int echoPin2 = D6;
+const int trigPin1 = D5;
+const int echoPin1 = D6;
+const int trigPin2 = D7;
+const int echoPin2 = D8;
 
 // Firebase setup
 const char* firebaseHost = "smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app";
 const String binsPath = "/bins.json";          // Bin distances
-const String statusPath = "/devices/esp8266_1.json"; // Status info
+const String statusPath = "/devices/esp8266_2.json"; // Status info
 
 BearSSL::WiFiClientSecure client;
 
@@ -70,7 +70,7 @@ void loop() {
     https.begin(client, url);
     https.addHeader("Content-Type", "application/json");
 
-    String payload = "{\"bin1\":" + String(d1) + ",\"bin2\":" + String(d2) + "}";
+    String payload = "{\"bin3\":" + String(d1) + ",\"bin4\":" + String(d2) + "}";
     int httpCode = https.sendRequest("PATCH", payload);
 
     if(httpCode > 0) Serial.printf("Bins updated: %d\n", httpCode);

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Edge Impulse Object Detection</title>
+    <title>Smart Bin Dashboard</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -15,41 +15,53 @@
     <!-- Mobile Bottom Navigation -->
     {% include 'nav.html' %}
 
-    <div class="container">
-      <div class="row mb-5 mt-5">
+    <div class="container mt-4">
+      <!-- ESP8266 Status -->
+      <div class="row">
         <div class="col-12">
-          <h1 class="text-light">Waste Level</h1>
+          <h2 class="text-light">ESP8266 Status</h2>
+          <ul class="list-group list-group-flush text-light">
+            <li class="list-group-item text-light bg-dark">
+              ESP8266 #1: <span id="esp1-status">Offline</span>
+            </li>
+            <li class="list-group-item text-light bg-dark">
+              ESP8266 #2: <span id="esp2-status">Offline</span>
+            </li>
+          </ul>
+        </div>
+      </div>
 
-          <!-- Donut Charts -->
-          <div class="row">
-            <div class="col-6 col-md-3">
-              <div id="donut-plastic"></div>
-              <p class="text-light text-center">Plastic</p>
-            </div>
-            <div class="col-6 col-md-3">
-              <div id="donut-paper"></div>
-              <p class="text-light text-center">Paper</p>
-            </div>
-            <div class="col-6 col-md-3">
-              <div id="donut-metal"></div>
-              <p class="text-light text-center">Metal</p>
-            </div>
-            <div class="col-6 col-md-3">
-              <div id="donut-general"></div>
-              <p class="text-light text-center">General</p>
-            </div>
-          </div>
+      <!-- Bin Distances -->
+      <div class="row mt-4">
+        <div class="col-12">
+          <h2 class="text-light">Bin Distances (cm)</h2>
+          <ul class="list-group list-group-flush text-light">
+            <li class="list-group-item text-light bg-dark">
+              Bin 1: <span id="bin1">0</span> cm
+            </li>
+            <li class="list-group-item text-light bg-dark">
+              Bin 2: <span id="bin2">0</span> cm
+            </li>
+            <li class="list-group-item text-light bg-dark">
+              Bin 3: <span id="bin3">0</span> cm
+            </li>
+            <li class="list-group-item text-light bg-dark">
+              Bin 4: <span id="bin4">0</span> cm
+            </li>
+          </ul>
+        </div>
+      </div>
 
-          <!-- Bar Chart -->
-          <div class="mt-4">
-            <h1 class="text-light">Garbage Summary</h1>
-            <div id="bar-chart"></div>
-          </div>
+      <!-- Garbage Summary -->
+      <div class="row mt-4 mb-5">
+        <div class="col-12">
+          <h2 class="text-light">Garbage Summary</h2>
+          <div id="bar-chart"></div>
         </div>
       </div>
     </div>
 
-    <!-- {% include 'script.html' %} -->
+    <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script
@@ -62,188 +74,101 @@
       integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
       crossorigin="anonymous"
     ></script>
+
+    <script>
+      // Last known data for garbage summary
+      let lastData = { plastic: 0, paper: 0, metal: 0, waste: 0 };
+
+      // Fetch bin distances
+      async function fetchBinDistances() {
+        try {
+          const response = await fetch(
+            "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/bins.json"
+          );
+          const data = await response.json();
+          const { bin1 = 0, bin2 = 0, bin3 = 0, bin4 = 0 } = data || {};
+
+          document.getElementById("bin1").innerText = bin1;
+          document.getElementById("bin2").innerText = bin2;
+          document.getElementById("bin3").innerText = bin3;
+          document.getElementById("bin4").innerText = bin4;
+        } catch (error) {
+          console.error("Error fetching bin distances:", error);
+        }
+      }
+
+      // Fetch garbage summary for bar chart
+      async function fetchGarbageSummary() {
+        try {
+          const response = await fetch("/getDashboardCount");
+          const rawData = await response.json();
+          const { plastic = 0, paper = 0, metal = 0, waste = 0 } = rawData;
+
+          if (
+            lastData.plastic !== plastic ||
+            lastData.paper !== paper ||
+            lastData.metal !== metal ||
+            lastData.waste !== waste
+          ) {
+            lastData = { plastic, paper, metal, waste };
+
+            const chart = ApexCharts.getChartByID("bar-chart");
+            const seriesData = [plastic, paper, metal, waste];
+            if (chart) {
+              chart.updateSeries([{ name: "Count", data: seriesData }], false);
+            } else {
+              const options = {
+                chart: { type: "bar", height: 300, id: "bar-chart" },
+                series: [{ name: "Count", data: seriesData }],
+                xaxis: { categories: ["Plastic", "Paper", "Metal", "Waste"] },
+                colors: ["#4CAF50", "#2196F3", "#FFC107", "#9C27B0"],
+                dataLabels: { enabled: true },
+              };
+              new ApexCharts(
+                document.querySelector("#bar-chart"),
+                options
+              ).render();
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching garbage summary:", error);
+        }
+      }
+
+      // Fetch ESP8266 connection status
+      async function fetchESPStatus() {
+        try {
+          const response = await fetch(
+            "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/devices.json"
+          );
+          const data = await response.json();
+
+          const esp1 = data.esp8266_1 || { status: "offline" };
+          const esp2 = data.esp8266_2 || { status: "offline" };
+
+          const esp1Status =
+            esp1.status === "online" ? "Online 🟢" : "Offline 🔴";
+          const esp2Status =
+            esp2.status === "online" ? "Online 🟢" : "Offline 🔴";
+
+          document.getElementById("esp1-status").innerText = esp1Status;
+          document.getElementById("esp2-status").innerText = esp2Status;
+        } catch (error) {
+          console.error("Error fetching ESP status:", error);
+        }
+      }
+
+      // Update everything every 5 seconds
+      setInterval(() => {
+        fetchBinDistances();
+        fetchGarbageSummary();
+        fetchESPStatus();
+      }, 5000);
+
+      // Initial fetch
+      fetchBinDistances();
+      fetchGarbageSummary();
+      fetchESPStatus();
+    </script>
   </body>
 </html>
-
-<script>
-  let lastData = { plastic: 0, paper: 0, metal: 0, waste: 0 };
-
-  function fetchAndUpdateDonutCharts() {
-    fetch("{{ url_for('static', filename='data.json') }}")
-      .then((response) => response.json())
-      .then((rawData) => {
-        const {
-          sensor1: paper = 0,
-          sensor2: waste = 0,
-          sensor3: plastic = 0,
-          sensor4: metal = 0,
-        } = rawData;
-
-        // Update Donut Charts without animation
-        function updateDonutChart(id, value, label) {
-          const chart = ApexCharts.getChartByID(id);
-          if (chart) {
-            chart.updateSeries(
-              [value, Math.max(0, paper + waste + plastic + metal - value)],
-              false
-            ); // Disable animation
-          } else {
-            const options = {
-              chart: {
-                type: "donut",
-                height: 200,
-                id: id,
-              },
-              series: [
-                value,
-                Math.max(0, paper + waste + plastic + metal - value),
-              ],
-              labels: [label, "Waste Level"],
-              colors: ["#E0E0E0", "green"],
-              legend: { show: false },
-              dataLabels: {
-                formatter: function (val) {
-                  return `${val.toFixed(0)}%`;
-                },
-              },
-            };
-            new ApexCharts(document.querySelector(`#${id}`), options).render();
-          }
-        }
-
-        // Update Donut Charts
-        updateDonutChart("donut-plastic", plastic, "Plastic");
-        updateDonutChart("donut-paper", paper, "Paper");
-        updateDonutChart("donut-metal", metal, "Metal");
-        updateDonutChart("donut-general", waste, "Waste");
-
-        // Check and log empty/full status with percentage
-        console.log(
-          "Plastic:",
-          plastic >= 22
-            ? `Empty (${((plastic / 22) * 100).toFixed(2)}%)`
-            : `Full (${((plastic / 22) * 100).toFixed(2)}%)`
-        );
-        console.log(
-          "Paper:",
-          paper >= 22
-            ? `Empty (${((paper / 22) * 100).toFixed(2)}%)`
-            : `Full (${((paper / 22) * 100).toFixed(2)}%)`
-        );
-        console.log(
-          "Metal:",
-          metal >= 22
-            ? `Empty (${((metal / 22) * 100).toFixed(2)}%)`
-            : `Full (${((metal / 22) * 100).toFixed(2)}%)`
-        );
-        console.log(
-          "Waste:",
-          waste >= 22
-            ? `Empty (${((waste / 22) * 100).toFixed(2)}%)`
-            : `Full (${((waste / 22) * 100).toFixed(2)}%)`
-        );
-      })
-      .catch((error) => {
-        console.error("Error fetching donut chart data:", error);
-      });
-  }
-
-  function fetchAndUpdateBarChart() {
-    fetch("/getDashboardCount")
-      .then((response) => response.json())
-      .then((rawData) => {
-        const { plastic = 0, paper = 0, metal = 0, waste = 0 } = rawData;
-
-        // Check if the data has changed
-        if (
-          lastData.plastic !== plastic ||
-          lastData.paper !== paper ||
-          lastData.metal !== metal ||
-          lastData.waste !== waste
-        ) {
-          lastData = { plastic, paper, metal, waste }; // Update the last data
-
-          // Update Bar Chart without animation
-          const chart = ApexCharts.getChartByID("bar-chart");
-          if (chart) {
-            chart.updateSeries(
-              [
-                {
-                  name: "Count",
-                  data: [plastic, paper, metal, waste],
-                },
-              ],
-              false
-            ); // Disable animation
-          } else {
-            const barOptions = {
-              chart: {
-                type: "bar",
-                height: 300,
-                id: "bar-chart",
-              },
-              series: [
-                {
-                  name: "Count",
-                  data: [plastic, paper, metal, waste],
-                },
-              ],
-              xaxis: {
-                categories: ["Plastic", "Paper", "Metal", "Waste"],
-              },
-              colors: ["green", "green", "green", "green"],
-              dataLabels: {
-                enabled: true,
-                formatter: function (val) {
-                  return val;
-                },
-              },
-            };
-
-            // Render Bar Chart
-            new ApexCharts(
-              document.querySelector("#bar-chart"),
-              barOptions
-            ).render();
-          }
-        }
-
-        // Check and log empty/full status with percentage
-        console.log(
-          "Plastic:",
-          plastic >= 22
-            ? `Empty (${((plastic / 22) * 100).toFixed(2)}%)`
-            : `Full (${((plastic / 22) * 100).toFixed(2)}%)`
-        );
-        console.log(
-          "Paper:",
-          paper >= 22
-            ? `Empty (${((paper / 22) * 100).toFixed(2)}%)`
-            : `Full (${((paper / 22) * 100).toFixed(2)}%)`
-        );
-        console.log(
-          "Metal:",
-          metal >= 22
-            ? `Empty (${((metal / 22) * 100).toFixed(2)}%)`
-            : `Full (${((metal / 22) * 100).toFixed(2)}%)`
-        );
-        console.log(
-          "Waste:",
-          waste >= 22
-            ? `Empty (${((waste / 22) * 100).toFixed(2)}%)`
-            : `Full (${((waste / 22) * 100).toFixed(2)}%)`
-        );
-      })
-      .catch((error) => {
-        console.error("Error fetching bar chart data:", error);
-      });
-  }
-
-  // Call the functions every 5 seconds (5000 ms)
-  setInterval(fetchAndUpdateDonutCharts, 5000);
-  setInterval(fetchAndUpdateBarChart, 5000);
-
-  // Initial fetch and render
-  fetchAndUpdateDonutCharts();
-  fetchAndUpdateBarChart();
-</script>
