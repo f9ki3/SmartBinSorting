@@ -5,10 +5,27 @@
     >
       <h3 class="text-light fw-bolder mb-2 mb-md-0">Waste Sorting Trash Bin</h3>
       <div class="d-flex flex-column flex-md-row gap-3">
-        <a class="text-decoration-none text-light" href="/">Scan Trash</a>
-        <a class="text-decoration-none text-light" href="/dashboard"
-          >Dashboard</a
+        <a
+          class="text-decoration-none text-light d-flex align-items-center gap-2"
+          href="/"
         >
+          <i class="bi bi-qr-code-scan"></i>
+          Scan Trash
+        </a>
+        <a
+          class="text-decoration-none text-light d-flex align-items-center gap-2"
+          href="/dashboard"
+        >
+          <i class="bi bi-speedometer2"></i>
+          Dashboard
+        </a>
+        <a
+          class="text-decoration-none text-light d-flex align-items-center gap-2"
+          href="/logout"
+        >
+          <i class="bi bi-box-arrow-right"></i>
+          Logout
+        </a>
       </div>
     </div>
   </div>
@@ -31,6 +48,13 @@
     >
       <i class="bi bi-speedometer2" style="font-size: 1.5rem"></i>
       <span style="font-size: 0.8rem">Dashboard</span>
+    </a>
+    <a
+      href="/logout"
+      class="text-light text-decoration-none d-flex flex-column text-center flex-column"
+    >
+      <i class="bi bi-power" style="font-size: 1.5rem"></i>
+      <span style="font-size: 0.8rem">Logout</span>
     </a>
   </div>
 </nav>
