@@ -6,8 +6,8 @@
 // Pins for Bin1 & Bin2
 const int trigPin1 = D1;
 const int echoPin1 = D2;
-const int trigPin2 = D3;
-const int echoPin2 = D4;
+const int trigPin2 = D5;
+const int echoPin2 = D6;
 
 // Built-in LED for Wi-Fi status
 #define wifiLed LED_BUILTIN
