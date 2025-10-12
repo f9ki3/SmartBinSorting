@@ -9,6 +9,9 @@ const int echoPin1 = D2;
 const int trigPin2 = D5;
 const int echoPin2 = D6;
 
+// Built-in LED (usually D4 / GPIO2)
+#define wifiLed LED_BUILTIN
+
 // Firebase setup
 const char* firebaseHost = "smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app";
 const String binsPath = "/bins.json";          // Bin distances
@@ -28,6 +31,7 @@ long measureDistance(int trigPin, int echoPin){
 // Update online status
 void updateStatus(String status){
   if(WiFi.status() == WL_CONNECTED){
+    digitalWrite(wifiLed, LOW); // LED ON (active low)
     HTTPClient https;
     String url = String("https://") + firebaseHost + statusPath;
     https.begin(client, url);
@@ -39,6 +43,8 @@ void updateStatus(String status){
 
     Serial.print("Status update: "); Serial.println(status);
     https.end();
+  } else {
+    digitalWrite(wifiLed, HIGH); // LED OFF if disconnected
   }
 }
 
@@ -47,6 +53,8 @@ void setup() {
 
   pinMode(trigPin1, OUTPUT); pinMode(echoPin1, INPUT);
   pinMode(trigPin2, OUTPUT); pinMode(echoPin2, INPUT);
+  pinMode(wifiLed, OUTPUT);
+  digitalWrite(wifiLed, HIGH); // LED off initially
 
   WiFiManager wifiManager;
   if(!wifiManager.autoConnect("SmartBin 1&2 Config")){
@@ -65,6 +73,7 @@ void loop() {
   Serial.printf("Bin1: %ld cm | Bin2: %ld cm\n", d1, d2);
 
   if(WiFi.status() == WL_CONNECTED){
+    digitalWrite(wifiLed, LOW); // LED ON (connected)
     HTTPClient https;
     String url = String("https://") + firebaseHost + binsPath;
     https.begin(client, url);
@@ -76,6 +85,8 @@ void loop() {
     if(httpCode > 0) Serial.printf("Bins updated: %d\n", httpCode);
     else Serial.printf("Error sending bins: %s\n", https.errorToString(httpCode).c_str());
     https.end();
+  } else {
+    digitalWrite(wifiLed, HIGH); // LED OFF if disconnected
   }
 
   // Update online status every 30 sec
