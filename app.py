@@ -19,6 +19,10 @@ def static_files(filename):
 def basuraHome():
     return render_template('index.html')
 
+@app.route('/home')
+def home():
+    return render_template('home.html')
+
 @app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
@@ -91,8 +95,6 @@ def send_data2():
 
     except Exception as e:
         return jsonify({"message": f"Error: {str(e)}"}), 400
-
-
 
 # Route to retrieve the stored data
 @app.route('/retrieve_data', methods=['GET'])

@@ -25,7 +25,7 @@ async function init() {
   // Apply styling to make the webcam responsive
   webcam.canvas.style.width = "100%"; // Full width
   webcam.canvas.style.height = "auto"; // Maintain aspect ratio
-  webcam.canvas.style.border = "5px solid green"; // Green border
+  webcam.canvas.style.border = "5px solid #198754"; // Green border
   webcam.canvas.style.borderRadius = "30px"; // Rounded corners
 }
 
