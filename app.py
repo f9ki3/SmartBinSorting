@@ -21,6 +21,7 @@ def static_files(filename):
 # -----------------------
 FIREBASE_SETTINGS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/settings.json"
 FIREBASE_BINS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/bins.json"
+FIREBASE_NOTIF_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/notifications.json"
 
 previous_alerts = {}  # Store previous alert state to only alert on change
 
@@ -40,14 +41,26 @@ def get_bin_percentage(bin_cm, empty=25, full=5):
     else:
         percent = ((empty - bin_cm) / (empty - full)) * 100
         return round(percent)
+def log_notification(bin_name, alert_type, percent):
+    """Log a notification to Firebase"""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    message = f"{bin_name} is {alert_type} ({percent}%)"
+    notif_data = {"timestamp": timestamp, "message": message}
+
+    try:
+        requests.post(FIREBASE_NOTIF_URL, json=notif_data)
+        print(f"Logged notification: {message}")
+    except Exception as e:
+        print("Failed to log notification:", e)
 
 def check_bins_alert():
     global previous_alerts
     while True:
         try:
-            # Fetch system notification setting
+            # Fetch system notification settings
             settings_resp = requests.get(FIREBASE_SETTINGS_URL)
             notifications_enabled = False
+            settings_data = {}
             if settings_resp.status_code == 200:
                 settings_data = settings_resp.json()
                 notifications_enabled = settings_data.get("system-notification", False)
@@ -57,8 +70,9 @@ def check_bins_alert():
                 bins_resp = requests.get(FIREBASE_BINS_URL)
                 if bins_resp.status_code == 200:
                     bins_data = bins_resp.json()
+
                     for bin_name in ["bin1", "bin2", "bin3", "bin4"]:
-                        cm = bins_data.get(bin_name, 25)  # Default empty if missing
+                        cm = bins_data.get(bin_name, 25)  # Default empty
                         percent = get_bin_percentage(cm)
                         alert_type = None
 
@@ -67,18 +81,19 @@ def check_bins_alert():
                         elif percent >= 80:
                             alert_type = "almost full"
 
-                        # Print percentage for each bin
-                        print(f"{bin_name}: {percent}% full")
+                        # print(f"{bin_name}: {percent}% full")
 
                         # Only alert if state changed
                         if previous_alerts.get(bin_name) != alert_type and alert_type:
-                            print(f"ALERT: {bin_name} is {alert_type} ({percent}%)")
                             previous_alerts[bin_name] = alert_type
 
-                            # Increment settings.notification in Firebase
+                            # Log notification to Firebase
+                            log_notification(bin_name, alert_type, percent)
+
+                            # Increment settings.notification counter
                             try:
-                                current_notification_count = settings_data.get("notification", 0)
-                                updated_count = current_notification_count + 1
+                                current_count = settings_data.get("notification", 0)
+                                updated_count = current_count + 1
                                 requests.patch(FIREBASE_SETTINGS_URL, json={"notification": updated_count})
                                 print(f"Updated notification count to {updated_count}")
                             except Exception as e:
@@ -90,8 +105,7 @@ def check_bins_alert():
             print("Error checking bins:", e)
 
         time.sleep(10)  # check every 10 seconds
-
-
+        
 def start_alert_thread():
     thread = threading.Thread(target=check_bins_alert)
     thread.daemon = True
@@ -230,5 +244,8 @@ def sendDataArduino():
 # Run App
 # -----------------------
 if __name__ == "__main__":
-    start_alert_thread() 
+    # Only start the thread once when using debug/reloader
+    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        start_alert_thread() 
     app.run(debug=True, host='0.0.0.0', port=5000)
+
