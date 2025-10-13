@@ -1,130 +1,121 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
-import serial
-import time
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, flash, redirect, url_for
 from data_logs import *
 from datetime import datetime
-import json
+import requests
 import os
 
 app = Flask(__name__)
+app.secret_key = "ayfsdgkhoipdj"  # Needed for session & flash
 
-# Initialize serial communication with Arduino (change the port if necessary)
-# arduino = serial.Serial('/dev/cu.usbserial-1430', 9600, timeout=1)  # Adjust port to match your Arduino or change COM3
-
+# -----------------------
+# Static Files
+# -----------------------
 @app.route('/static/<path:filename>')
 def static_files(filename):
     return send_from_directory('static', filename)
 
+# -----------------------
+# Login Route
+# -----------------------
+FIREBASE_SETTINGS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/settings.json"
+
+def get_correct_pin():
+    try:
+        response = requests.get(FIREBASE_SETTINGS_URL)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("CORRECT_PIN")  # Make sure your Firebase JSON has this key
+        else:
+            print("Failed to fetch PIN from Firebase:", response.status_code)
+            return None
+    except Exception as e:
+        print("Error fetching PIN:", e)
+        return None
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        pin_inputs = request.form.getlist("pin")  # Get all 6 pin inputs
+        pin = "".join(pin_inputs)
+
+        correct_pin = get_correct_pin()
+        if not correct_pin:
+            flash("Unable to verify PIN at the moment.", "danger")
+            return redirect(url_for("login"))
+
+        if pin == correct_pin:
+            session['logged_in'] = True
+            return redirect(url_for("dashboard"))
+        else:
+            flash("Invalid PIN. Try again.", "danger")
+            return redirect(url_for("login"))
+
+    return render_template("index.html")
+
+# -----------------------
+# Logout Route
+# -----------------------
+@app.route("/logout")
+def logout():
+    session.pop('logged_in', None)
+    flash("Logged out successfully.", "info")
+    return redirect(url_for("login"))
+
+# -----------------------
+# Protected Routes
+# -----------------------
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash("Please login first.", "warning")
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
-def basuraHome():
+def index():
     return render_template('index.html')
 
 @app.route('/home')
+@login_required
 def home():
     return render_template('home.html')
 
 @app.route('/dashboard')
+@login_required
 def dashboard():
     return render_template('dashboard.html')
 
+# -----------------------
+# API Routes
+# -----------------------
 @app.route('/getAllData')
+@login_required
 def getAllData():
     data = get_all_records()
     return jsonify(data)
 
 @app.route('/getDashboardCount')
+@login_required
 def getDashboard():
     data = get_recycle_type_counts()
     return jsonify(data)
 
-DATA_FILE = os.path.join('static', 'data.json')
-
-def read_data():
-    try:
-        with open(DATA_FILE, 'r') as file:
-            return json.load(file)
-    except:
-        return {}
-
-def write_data(data):
-    with open(DATA_FILE, 'w') as file:
-        json.dump(data, file)
-
-@app.route('/send_data', methods=['POST'])
-def send_data():
-    try:
-        data = request.get_json(force=True)
-
-        stored_data = read_data()
-        stored_data["sensor1"] = data.get("sensor1")
-        stored_data["sensor2"] = data.get("sensor2")
-        write_data(stored_data)
-
-        return jsonify({"message": "Data from both sensors stored successfully!"}), 200
-
-    except Exception as e:
-        return jsonify({"message": f"Error: {str(e)}"}), 400
-
-    try:
-        data = request.get_json(force=True)  # <-- force=True handles bad headers
-
-        if not data or "distance" not in data:
-            return jsonify({"message": "Missing or invalid JSON"}), 400
-
-        stored_data = read_data()
-        stored_data["distance"] = data["distance"]
-        write_data(stored_data)
-
-        return jsonify({"message": "Data received and stored successfully!"}), 200
-
-    except Exception as e:
-        return jsonify({"message": f"Error: {str(e)}"}), 400
-    
-
-@app.route('/send_data2', methods=['POST'])
-def send_data2():
-    try:
-        data = request.get_json(force=True)
-
-        stored_data = read_data()
-        stored_data["sensor3"] = data.get("sensor3")
-        stored_data["sensor4"] = data.get("sensor4")
-        write_data(stored_data)
-
-        return jsonify({"message": "Data from sensors 3 and 4 stored successfully!"}), 200
-
-    except Exception as e:
-        return jsonify({"message": f"Error: {str(e)}"}), 400
-
-# Route to retrieve the stored data
-@app.route('/retrieve_data', methods=['GET'])
-def retrieve_data():
-    try:
-        # Read the stored data from the file
-        data = read_data()
-
-        return jsonify(data), 200
-    except Exception as e:
-        return jsonify({"message": f"Error: {str(e)}"}), 400
-
 @app.route('/sendDataArduino', methods=['POST'])
+@login_required
 def sendDataArduino():
-    input_data = request.form.get('data')  # Get data from the AJAX request
+    input_data = request.form.get('data')
     
     if input_data and input_data != 'none':
-        # Insert the data into your database
-        insert_data(input_data)  # Make sure this function handles DB insertion
-
-        # Return a JSON response back to the client
-        return jsonify({
-            'success': True,
-            'message': 'Data inserted successfully',
-            'data': input_data
-        })
+        insert_data(input_data)
+        return jsonify({'success': True, 'message': 'Data inserted successfully', 'data': input_data})
     else:
-        return jsonify({
-            'success': True,
-            'message': 'No valid data received'
-        })
+        return jsonify({'success': False, 'message': 'No valid data received'})
+
+# -----------------------
+# Run App
+# -----------------------
 if __name__ == "__main__":
     app.run(debug=True, host='0.0.0.0', port=5000)
