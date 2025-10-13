@@ -99,7 +99,6 @@
   integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
   crossorigin="anonymous"
 ></script>
-
 <div
   class="offcanvas bg-dark offcanvas-start"
   data-bs-backdrop="static"
@@ -113,12 +112,39 @@
     </h5>
     <button
       type="button"
-      class="btn-close"
+      class="btn-close btn-close-white"
       data-bs-dismiss="offcanvas"
       aria-label="Close"
     ></button>
   </div>
   <div class="offcanvas-body">
-    <div>I will not close if you click outside of me.</div>
+    <!-- Notification 1 -->
+    <div class="d-flex align-items-start mb-3 p-2 bg-secondary rounded-3">
+      <i class="bi bi-bell-fill text-light me-3" style="font-size: 1.5rem"></i>
+      <div>
+        <small class="text-light">2025-10-14 10:30 AM</small>
+        <p class="text-light mb-0">Bin 1 is full. Please empty it soon.</p>
+      </div>
+    </div>
+
+    <!-- Notification 2 -->
+    <div class="d-flex align-items-start mb-3 p-2 bg-secondary rounded-3">
+      <i class="bi bi-bell-fill text-light me-3" style="font-size: 1.5rem"></i>
+      <div>
+        <small class="text-light">2025-10-14 09:15 AM</small>
+        <p class="text-light mb-0">
+          Bin 2 is nearly full. Consider clearing it.
+        </p>
+      </div>
+    </div>
+
+    <!-- Notification 3 -->
+    <div class="d-flex align-items-start mb-3 p-2 bg-secondary rounded-3">
+      <i class="bi bi-bell-fill text-light me-3" style="font-size: 1.5rem"></i>
+      <div>
+        <small class="text-light">2025-10-13 05:50 PM</small>
+        <p class="text-light mb-0">Bin 3 has been emptied successfully.</p>
+      </div>
+    </div>
   </div>
 </div>

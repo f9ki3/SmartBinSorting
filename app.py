@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, jsonify, send_from_directory,
 from data_logs import *
 from datetime import datetime
 import requests
+import threading
+import time
 import os
 
 app = Flask(__name__)
@@ -15,9 +17,76 @@ def static_files(filename):
     return send_from_directory('static', filename)
 
 # -----------------------
-# Login Route
+# Firebase URLs
 # -----------------------
 FIREBASE_SETTINGS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/settings.json"
+FIREBASE_BINS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/bins.json"
+
+previous_alerts = {}  # Store previous alert state to only alert on change
+
+def get_bin_percentage(bin_cm, empty=25, full=5):
+    """
+    Convert sensor distance to fill percentage.
+    - 25 cm = 0% full (empty)
+    - 5 cm = 100% full
+    - Linear mapping in between
+    - Values above empty → 0%
+    - Values below full → 100%
+    """
+    if bin_cm >= empty:
+        return 0
+    elif bin_cm <= full:
+        return 100
+    else:
+        percent = ((empty - bin_cm) / (empty - full)) * 100
+        return round(percent)
+
+def check_bins_alert():
+    global previous_alerts
+    while True:
+        try:
+            # Fetch system notification setting
+            settings_resp = requests.get(FIREBASE_SETTINGS_URL)
+            notifications_enabled = False
+            if settings_resp.status_code == 200:
+                settings_data = settings_resp.json()
+                notifications_enabled = settings_data.get("system-notification", False)
+
+            if notifications_enabled:
+                # Fetch bin data
+                bins_resp = requests.get(FIREBASE_BINS_URL)
+                if bins_resp.status_code == 200:
+                    bins_data = bins_resp.json()
+                    for bin_name in ["bin1", "bin2", "bin3", "bin4"]:  # Explicitly check each bin
+                        cm = bins_data.get(bin_name, 25)  # Default empty if missing
+                        percent = get_bin_percentage(cm)
+                        alert_type = None
+
+                        if percent >= 100:
+                            alert_type = "full"
+                        elif percent >= 80:
+                            alert_type = "almost full"
+
+                        # Print percentage for each bin
+                        print(f"{bin_name}: {percent}% full")
+
+                        # Only alert if state changed
+                        if previous_alerts.get(bin_name) != alert_type and alert_type:
+                            print(f"ALERT: {bin_name} is {alert_type} ({percent}%)")
+                            previous_alerts[bin_name] = alert_type
+                        elif alert_type is None:
+                            previous_alerts[bin_name] = None
+
+        except Exception as e:
+            print("Error checking bins:", e)
+
+        time.sleep(10)  # check every 10 seconds
+
+def start_alert_thread():
+    thread = threading.Thread(target=check_bins_alert)
+    thread.daemon = True
+    thread.start()
+
 
 def get_correct_pin():
     try:
@@ -127,4 +196,5 @@ def sendDataArduino():
 # Run App
 # -----------------------
 if __name__ == "__main__":
+    start_alert_thread() 
     app.run(debug=True, host='0.0.0.0', port=5000)
