@@ -24,7 +24,7 @@ def get_correct_pin():
         response = requests.get(FIREBASE_SETTINGS_URL)
         if response.status_code == 200:
             data = response.json()
-            return data.get("CORRECT_PIN")  # Make sure your Firebase JSON has this key
+            return data.get("password")  # Make sure your Firebase JSON has this key
         else:
             print("Failed to fetch PIN from Firebase:", response.status_code)
             return None
@@ -76,6 +76,10 @@ def login_required(f):
 
 @app.route('/')
 def index():
+    if session.get('logged_in'):
+        # User is already logged in, redirect to dashboard
+        return redirect(url_for('dashboard'))
+    # Otherwise, show the login page
     return render_template('index.html')
 
 @app.route('/home')
