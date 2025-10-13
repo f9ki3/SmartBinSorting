@@ -34,7 +34,7 @@
         <div class="col-12 col-md-3"></div>
 
         <div class="col-12 col-md-6">
-          <div class="card bg-secondary text-light rounded-4 p-4">
+          <div class="card mb-5 bg-secondary text-light rounded-4 p-4">
             <!-- Title -->
             <h5 class="mb-4 fw-bolder">Configuration</h5>
 
@@ -193,14 +193,24 @@
               </div>
 
               <!-- Save Button -->
-              <div class="w-100 d-flex justify-content-center">
+              <div class="w-100 gap-2 justify-content-center">
+                <!-- Save Button -->
                 <button
                   type="submit"
                   id="saveBtn"
-                  class="btn mb-3 w-25 rounded-4 btn-success"
+                  class="btn mb-3 w-100 btn-success"
                 >
-                  <i class="bi bi-check-lg me-2"></i> Save
+                  Save
                 </button>
+
+                <!-- Logout Button -->
+                <a
+                  href="/logout"
+                  id="logoutBtn"
+                  class="btn mb-3 w-100 btn-danger text-center"
+                >
+                  Logout
+                </a>
               </div>
             </form>
 
