@@ -57,7 +57,7 @@ def check_bins_alert():
                 bins_resp = requests.get(FIREBASE_BINS_URL)
                 if bins_resp.status_code == 200:
                     bins_data = bins_resp.json()
-                    for bin_name in ["bin1", "bin2", "bin3", "bin4"]:  # Explicitly check each bin
+                    for bin_name in ["bin1", "bin2", "bin3", "bin4"]:
                         cm = bins_data.get(bin_name, 25)  # Default empty if missing
                         percent = get_bin_percentage(cm)
                         alert_type = None
@@ -74,6 +74,15 @@ def check_bins_alert():
                         if previous_alerts.get(bin_name) != alert_type and alert_type:
                             print(f"ALERT: {bin_name} is {alert_type} ({percent}%)")
                             previous_alerts[bin_name] = alert_type
+
+                            # Increment settings.notification in Firebase
+                            try:
+                                current_notification_count = settings_data.get("notification", 0)
+                                updated_count = current_notification_count + 1
+                                requests.patch(FIREBASE_SETTINGS_URL, json={"notification": updated_count})
+                                print(f"Updated notification count to {updated_count}")
+                            except Exception as e:
+                                print("Failed to update notification count:", e)
                         elif alert_type is None:
                             previous_alerts[bin_name] = None
 
@@ -81,6 +90,7 @@ def check_bins_alert():
             print("Error checking bins:", e)
 
         time.sleep(10)  # check every 10 seconds
+
 
 def start_alert_thread():
     thread = threading.Thread(target=check_bins_alert)
@@ -101,6 +111,30 @@ def get_correct_pin():
         print("Error fetching PIN:", e)
         return None
 
+@app.route('/reset_notification_count', methods=['POST'])
+def reset_notification_count():
+    try:
+        # Reset notification to 0
+        requests.patch(FIREBASE_SETTINGS_URL, json={"notification": 0})
+        return jsonify({"success": True})
+    except Exception as e:
+        print("Failed to reset notification count:", e)
+        return jsonify({"success": False}), 500
+    
+@app.route('/get_notification_count')
+def get_notifications_count():
+    try:
+        resp = requests.get(FIREBASE_SETTINGS_URL)
+        if resp.status_code == 200:
+            data = resp.json()
+            count = data.get("notification", 0)
+            return jsonify({'count': count})
+        else:
+            return jsonify({'count': 0})
+    except Exception as e:
+        print("Error fetching notification count:", e)
+        return jsonify({'count': 0})
+    
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":

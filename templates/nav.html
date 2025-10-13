@@ -27,16 +27,30 @@
           Settings
         </a>
         <a
-          class="text-decoration-none text-light d-flex align-items-center gap-2"
+          class="text-decoration-none text-light d-flex align-items-center gap-2 bell-icon position-relative"
           data-bs-toggle="offcanvas"
           data-bs-target="#staticBackdrop"
           aria-controls="staticBackdrop"
           style="cursor: pointer"
         >
-          <i class="bi bi-bell"></i>
+          <i class="bi bi-bell-fill"></i>
           Notification
+          <span
+            class="notif-counter"
+            style="
+              position: absolute;
+              top: -15px;
+              right: 78px;
+              font-size: 0.7rem;
+              background: red;
+              color: white;
+              border-radius: 50%;
+              padding: 2px 6px;
+              display: none;
+            "
+            >0</span
+          >
         </a>
-
         <a
           class="text-decoration-none text-light d-flex align-items-center gap-2"
           href="/logout"
@@ -52,14 +66,29 @@
   <div class="container d-flex justify-content-around">
     <!-- Scan Button -->
     <a
-      style="cursor: pointer"
+      class="text-decoration-none text-light d-flex flex-column text-center bell-icon position-relative"
       data-bs-toggle="offcanvas"
       data-bs-target="#staticBackdrop"
       aria-controls="staticBackdrop"
-      class="text-light text-decoration-none d-flex flex-column text-center flex-column"
+      style="cursor: pointer"
     >
       <i class="bi bi-bell" style="font-size: 1.5rem"></i>
       <span style="font-size: 0.8rem">Notification</span>
+      <span
+        class="notif-counter"
+        style="
+          position: absolute;
+          top: 0;
+          right: 0;
+          font-size: 0.7rem;
+          background: red;
+          color: white;
+          border-radius: 50%;
+          padding: 2px 6px;
+          display: none;
+        "
+        >0</span
+      >
     </a>
 
     <!-- Dashboard Button -->
@@ -148,3 +177,59 @@
     </div>
   </div>
 </div>
+
+<script>
+  const FIREBASE_SETTINGS_URL =
+    "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/settings.json";
+
+  // Update notification counter
+  async function updateNotificationCounter() {
+    try {
+      const response = await fetch(FIREBASE_SETTINGS_URL);
+      const data = await response.json();
+      const count = data.notification || 0;
+
+      document.querySelectorAll(".notif-counter").forEach((span) => {
+        span.textContent = count;
+        if (count > 0) {
+          span.style.display = "inline-block";
+        } else {
+          span.style.display = "none";
+        }
+      });
+    } catch (err) {
+      console.error("Failed to fetch notification count", err);
+    }
+  }
+
+  // Reset notification counter
+  async function resetNotificationCounter() {
+    try {
+      await fetch(FIREBASE_SETTINGS_URL, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ notification: 0 }),
+      });
+
+      document.querySelectorAll(".notif-counter").forEach((span) => {
+        span.textContent = 0;
+        span.style.display = "none";
+      });
+    } catch (err) {
+      console.error("Failed to reset notification count", err);
+    }
+  }
+
+  // Attach click events to all bell icons
+  document.querySelectorAll(".bell-icon").forEach((bell) => {
+    bell.addEventListener("click", resetNotificationCounter);
+  });
+
+  // Poll every 3 seconds
+  setInterval(updateNotificationCounter, 3000);
+
+  // Initial load
+  updateNotificationCounter();
+</script>
