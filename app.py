@@ -41,6 +41,7 @@ def get_bin_percentage(bin_cm, empty=25, full=5):
     else:
         percent = ((empty - bin_cm) / (empty - full)) * 100
         return round(percent)
+
 def log_notification(bin_name, alert_type, percent):
     """Log a notification to Firebase"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -52,6 +53,12 @@ def log_notification(bin_name, alert_type, percent):
         print(f"Logged notification: {message}")
     except Exception as e:
         print("Failed to log notification:", e)
+BIN_MAPPING = {
+    "bin1": "paper bin",
+    "bin2": "general bin",
+    "bin3": "plastic bin",
+    "bin4": "metal bin"
+}
 
 def check_bins_alert():
     global previous_alerts
@@ -71,8 +78,8 @@ def check_bins_alert():
                 if bins_resp.status_code == 200:
                     bins_data = bins_resp.json()
 
-                    for bin_name in ["bin1", "bin2", "bin3", "bin4"]:
-                        cm = bins_data.get(bin_name, 25)  # Default empty
+                    for raw_bin, friendly_name in BIN_MAPPING.items():
+                        cm = bins_data.get(raw_bin, 25)  # Default empty
                         percent = get_bin_percentage(cm)
                         alert_type = None
 
@@ -81,14 +88,12 @@ def check_bins_alert():
                         elif percent >= 80:
                             alert_type = "almost full"
 
-                        # print(f"{bin_name}: {percent}% full")
-
                         # Only alert if state changed
-                        if previous_alerts.get(bin_name) != alert_type and alert_type:
-                            previous_alerts[bin_name] = alert_type
+                        if previous_alerts.get(friendly_name) != alert_type and alert_type:
+                            previous_alerts[friendly_name] = alert_type
 
-                            # Log notification to Firebase
-                            log_notification(bin_name, alert_type, percent)
+                            # Log notification using ONLY friendly name
+                            log_notification(friendly_name, alert_type, percent)
 
                             # Increment settings.notification counter
                             try:
@@ -99,12 +104,14 @@ def check_bins_alert():
                             except Exception as e:
                                 print("Failed to update notification count:", e)
                         elif alert_type is None:
-                            previous_alerts[bin_name] = None
+                            previous_alerts[friendly_name] = None
 
         except Exception as e:
             print("Error checking bins:", e)
 
-        time.sleep(10)  # check every 10 seconds
+        time.sleep(10)
+
+
         
 def start_alert_thread():
     thread = threading.Thread(target=check_bins_alert)
