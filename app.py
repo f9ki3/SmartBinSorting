@@ -44,9 +44,9 @@ def get_bin_percentage(bin_cm, empty=25, full=5):
         return round(percent)
 
 def log_notification(bin_name, alert_type, percent):
-    """Log a notification to Firebase using friendly bin name only"""
+    """Log a notification to Firebase"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message = f"{bin_name} is {alert_type} ({percent}%)"  # bin_name is already friendly
+    message = f"{bin_name} is {alert_type} ({percent}%)"
     notif_data = {"timestamp": timestamp, "message": message}
 
     try:
@@ -54,7 +54,7 @@ def log_notification(bin_name, alert_type, percent):
         print(f"Logged notification: {message}")
     except Exception as e:
         print("Failed to log notification:", e)
-
+        
 BIN_MAPPING = {
     "bin1": "paper bin",
     "bin2": "general bin",
