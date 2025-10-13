@@ -22,6 +22,7 @@ def static_files(filename):
 FIREBASE_SETTINGS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/settings.json"
 FIREBASE_BINS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/bins.json"
 FIREBASE_NOTIF_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/notifications.json"
+FIREBASE_NOTIF_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/notifications.json"
 
 previous_alerts = {}  # Store previous alert state to only alert on change
 
@@ -43,9 +44,9 @@ def get_bin_percentage(bin_cm, empty=25, full=5):
         return round(percent)
 
 def log_notification(bin_name, alert_type, percent):
-    """Log a notification to Firebase"""
+    """Log a notification to Firebase using friendly bin name only"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message = f"{bin_name} is {alert_type} ({percent}%)"
+    message = f"{bin_name} is {alert_type} ({percent}%)"  # bin_name is already friendly
     notif_data = {"timestamp": timestamp, "message": message}
 
     try:
@@ -53,6 +54,7 @@ def log_notification(bin_name, alert_type, percent):
         print(f"Logged notification: {message}")
     except Exception as e:
         print("Failed to log notification:", e)
+
 BIN_MAPPING = {
     "bin1": "paper bin",
     "bin2": "general bin",
@@ -111,7 +113,6 @@ def check_bins_alert():
 
         time.sleep(10)
 
-
         
 def start_alert_thread():
     thread = threading.Thread(target=check_bins_alert)
@@ -155,7 +156,40 @@ def get_notifications_count():
     except Exception as e:
         print("Error fetching notification count:", e)
         return jsonify({'count': 0})
-    
+
+@app.route('/get_notifications', methods=['GET'])
+def get_notifications():
+    """
+    Returns notifications in batches for lazy loading.
+    Query params:
+      start: index to start
+      limit: number of notifications
+    """
+    start = int(request.args.get('start', 0))
+    limit = int(request.args.get('limit', 10))
+
+    try:
+        resp = requests.get(FIREBASE_NOTIF_URL)
+        if resp.status_code != 200:
+            return jsonify([])
+
+        data = resp.json()
+        if not data:
+            return jsonify([])
+
+        # Convert object to list and sort by timestamp descending
+        notifications = sorted(
+            [{"id": k, **v} for k, v in data.items()],
+            key=lambda x: x["timestamp"],
+            reverse=True
+        )
+
+        batch = notifications[start:start+limit]
+        return jsonify(batch)
+    except Exception as e:
+        print("Failed to fetch notifications:", e)
+        return jsonify([])
+
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":

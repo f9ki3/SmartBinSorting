@@ -146,13 +146,13 @@
       aria-label="Close"
     ></button>
   </div>
+
   <div
     class="offcanvas-body"
     id="notification-container"
     style="overflow-y: auto; max-height: 100vh"
-  >
-    <!-- Notifications will be inserted here dynamically -->
-  </div>
+  ></div>
+
   <div id="loading-spinner" class="text-center my-2" style="display: none">
     <div class="spinner-border text-light" role="status">
       <span class="visually-hidden">Loading...</span>
@@ -161,53 +161,30 @@
 </div>
 
 <script>
-  const NOTIFICATION_URL =
-    "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/notifications.json";
   const container = document.getElementById("notification-container");
   const spinner = document.getElementById("loading-spinner");
 
-  let notifications = []; // Store all notifications
-  let loadedCount = 0; // How many notifications are currently displayed
-  const BATCH_SIZE = 10; // Load 10 at a time
-  let existingIds = new Set(); // Track existing notification IDs to avoid duplicates
+  let loadedCount = 0;
+  const BATCH_SIZE = 10;
+  let allLoaded = false;
 
-  async function fetchAllNotifications() {
-    try {
-      const response = await fetch(NOTIFICATION_URL);
-      const data = await response.json();
-
-      if (!data) return; // No notifications
-
-      // Convert object to array with IDs
-      const newNotifications = Object.entries(data)
-        .map(([id, notif]) => ({ id, ...notif }))
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-      // Check for changes: only append notifications not in existingIds
-      const hasChanges = newNotifications.some((n) => !existingIds.has(n.id));
-      if (!hasChanges) return; // Nothing new, skip
-
-      notifications = newNotifications;
-      loadedCount = 0;
-      container.innerHTML = ""; // Clear container
-      existingIds = new Set(); // Reset existing IDs
-      loadMoreNotifications(); // Load first batch
-    } catch (error) {
-      console.error("Failed to fetch notifications:", error);
-    }
-  }
-
-  function loadMoreNotifications() {
-    if (loadedCount >= notifications.length) return;
+  async function loadNotifications() {
+    if (allLoaded) return;
 
     spinner.style.display = "block";
-
-    setTimeout(() => {
-      const nextBatch = notifications.slice(
-        loadedCount,
-        loadedCount + BATCH_SIZE
+    try {
+      const response = await fetch(
+        `/get_notifications?start=${loadedCount}&limit=${BATCH_SIZE}`
       );
-      nextBatch.forEach((notif) => {
+      const data = await response.json();
+
+      if (!data.length) {
+        allLoaded = true; // No more notifications
+        spinner.style.display = "none";
+        return;
+      }
+
+      data.forEach((notif) => {
         const notifDiv = document.createElement("div");
         notifDiv.className =
           "d-flex align-items-start mb-3 p-2 bg-secondary rounded-3";
@@ -219,12 +196,14 @@
           </div>
         `;
         container.appendChild(notifDiv);
-        existingIds.add(notif.id);
       });
 
-      loadedCount += nextBatch.length;
+      loadedCount += data.length;
+    } catch (error) {
+      console.error("Failed to load notifications:", error);
+    } finally {
       spinner.style.display = "none";
-    }, 300);
+    }
   }
 
   // Detect scroll to bottom
@@ -233,15 +212,12 @@
       container.scrollTop + container.clientHeight >=
       container.scrollHeight - 10
     ) {
-      loadMoreNotifications();
+      loadNotifications();
     }
   });
 
-  // Initial fetch
-  fetchAllNotifications();
-
-  // Refresh notifications every 5 seconds
-  setInterval(fetchAllNotifications, 5000);
+  // Initial load
+  loadNotifications();
 </script>
 
 <script>
