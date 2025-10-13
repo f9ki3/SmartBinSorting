@@ -30,7 +30,7 @@
 
     <div class="container mt-4">
       <!-- ESP8266 Status -->
-      <h2>Controllers Status</h2>
+      <h6>Controllers Status</h6>
       <div class="row g-3 mb-4">
         <div class="col-md-6 col-12">
           <div class="card p-2 rounded rounded-4 bg-secondary text-light">
@@ -65,42 +65,49 @@
       </div>
 
       <!-- Bin Fill Donut Charts in 4 Columns -->
-      <h2>Bin Fill Levels</h2>
-      <div class="row text-center mb-5">
-        <div class="col-md-3 col-6 mb-4">
-          <div class="card p-3 bg-secondary rounded rounded-4">
-            <div class="d-flex justify-content-between">
-              <h5 class="text-light">Bin 1</h5>
-              <p class="text-light"><span id="bin1">0</span> cm</p>
+      <h6>Bin Fill Levels</h6>
+      <div class="row g-3 text-center mb-5 justify-content-center">
+        <!-- Bin 1 -->
+        <div class="col-xl-3 col-lg-4 col-sm-6 col-6">
+          <div class="card p-4 bg-secondary rounded-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="text-light mb-0">Paper</h5>
+              <p class="text-light mb-0"><span id="bin1">0</span> cm</p>
             </div>
-            <div id="donut-bin1"></div>
+            <div id="donut-bin1" style="height: auto"></div>
           </div>
         </div>
-        <div class="col-md-3 col-6 mb-4">
-          <div class="card p-3 bg-secondary rounded rounded-4">
-            <div class="d-flex justify-content-between">
-              <h5 class="text-light">Bin 2</h5>
-              <p class="text-light"><span id="bin2">0</span> cm</p>
+
+        <!-- Bin 2 -->
+        <div class="col-xl-3 col-lg-4 col-sm-6 col-6">
+          <div class="card p-4 bg-secondary rounded-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="text-light mb-0">General</h5>
+              <p class="text-light mb-0"><span id="bin2">0</span> cm</p>
             </div>
-            <div id="donut-bin2"></div>
+            <div id="donut-bin2" style="height: auto"></div>
           </div>
         </div>
-        <div class="col-md-3 col-6 mb-4">
-          <div class="card p-3 bg-secondary rounded rounded-4">
-            <div class="d-flex justify-content-between">
-              <h5 class="text-light">Bin 3</h5>
-              <p class="text-light"><span id="bin3">0</span> cm</p>
+
+        <!-- Bin 3 -->
+        <div class="col-xl-3 col-lg-4 col-sm-6 col-6">
+          <div class="card p-4 bg-secondary rounded-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="text-light mb-0">Plastic</h5>
+              <p class="text-light mb-0"><span id="bin3">0</span> cm</p>
             </div>
-            <div id="donut-bin3"></div>
+            <div id="donut-bin3" style="height: auto"></div>
           </div>
         </div>
-        <div class="col-md-3 col-6 mb-4">
-          <div class="card p-3 bg-secondary rounded rounded-4">
-            <div class="d-flex justify-content-between">
-              <h5 class="text-light">Bin 4</h5>
-              <p class="text-light"><span id="bin4">0</span> cm</p>
+
+        <!-- Bin 4 -->
+        <div class="col-xl-3 col-lg-4 col-sm-6 col-6">
+          <div class="card p-4 bg-secondary rounded-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="text-light mb-0">Metal</h5>
+              <p class="text-light mb-0"><span id="bin4">0</span> cm</p>
             </div>
-            <div id="donut-bin4"></div>
+            <div id="donut-bin4" style="height: auto"></div>
           </div>
         </div>
       </div>
@@ -125,7 +132,7 @@
     ></script>
     <script>
       // --- State ---
-      let lastData = { plastic: 0, paper: 0, metal: 0, general: 0 };
+      let lastData = { plastic: 0, general: 0, paper: 0, metal: 0 };
       let lastUpdate = { esp8266_1: null, esp8266_2: null };
       const maxDist = 25; // empty
       const minDist = 5; // full
@@ -215,28 +222,42 @@
         try {
           const response = await fetch("/getDashboardCount");
           const rawData = await response.json();
-          const { plastic = 0, paper = 0, metal = 0, general = 0 } = rawData;
+          const { paper = 0, general = 0, plastic = 0, metal = 0 } = rawData;
 
+          // Correct order: Paper, General, Plastic, Metal
           if (
-            lastData.plastic !== plastic ||
             lastData.paper !== paper ||
-            lastData.metal !== metal ||
-            lastData.general !== general
+            lastData.general !== general ||
+            lastData.plastic !== plastic ||
+            lastData.metal !== metal
           ) {
-            lastData = { plastic, paper, metal, general };
-            const seriesData = [plastic, paper, metal, general];
+            lastData = { paper, general, plastic, metal };
+            const seriesData = [paper, general, plastic, metal];
             const chart = ApexCharts.getChartByID("bar-chart");
 
             if (chart) {
               chart.updateSeries([{ name: "Count", data: seriesData }], false);
             } else {
               const options = {
-                chart: { type: "bar", height: 300, id: "bar-chart" },
+                chart: {
+                  type: "bar",
+                  height: 300,
+                  id: "bar-chart",
+                  toolbar: { show: false }, // 🚫 No toolbar
+                },
                 series: [{ name: "Count", data: seriesData }],
-                xaxis: { categories: ["Plastic", "Paper", "Metal", "general"] },
+                xaxis: { categories: ["Paper", "General", "Plastic", "Metal"] },
                 colors: ["#198754", "#198754", "#198754", "#198754"],
                 dataLabels: { enabled: true },
+                plotOptions: {
+                  bar: {
+                    borderRadius: 5,
+                    columnWidth: "45%",
+                  },
+                },
+                grid: { strokeDashArray: 4 },
               };
+
               new ApexCharts(
                 document.querySelector("#bar-chart"),
                 options
