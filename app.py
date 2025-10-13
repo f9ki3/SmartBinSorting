@@ -87,6 +87,11 @@ def index():
 def home():
     return render_template('home.html')
 
+@app.route('/settings')
+@login_required
+def settings():
+    return render_template('settings.html')
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
