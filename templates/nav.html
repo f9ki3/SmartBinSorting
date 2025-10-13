@@ -146,51 +146,102 @@
       aria-label="Close"
     ></button>
   </div>
-  <div class="offcanvas-body" id="notification-container">
+  <div
+    class="offcanvas-body"
+    id="notification-container"
+    style="overflow-y: auto; max-height: 100vh"
+  >
     <!-- Notifications will be inserted here dynamically -->
+  </div>
+  <div id="loading-spinner" class="text-center my-2" style="display: none">
+    <div class="spinner-border text-light" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
   </div>
 </div>
 
 <script>
   const NOTIFICATION_URL =
     "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/notifications.json";
+  const container = document.getElementById("notification-container");
+  const spinner = document.getElementById("loading-spinner");
 
-  async function fetchNotifications() {
+  let notifications = []; // Store all notifications
+  let loadedCount = 0; // How many notifications are currently displayed
+  const BATCH_SIZE = 10; // Load 10 at a time
+  let existingIds = new Set(); // Track existing notification IDs to avoid duplicates
+
+  async function fetchAllNotifications() {
     try {
       const response = await fetch(NOTIFICATION_URL);
       const data = await response.json();
 
-      // Convert object to array and sort by timestamp descending
-      const notifications = Object.values(data).sort((a, b) => {
-        return new Date(b.timestamp) - new Date(a.timestamp);
-      });
+      if (!data) return; // No notifications
 
-      const container = document.getElementById("notification-container");
-      container.innerHTML = ""; // Clear previous notifications
+      // Convert object to array with IDs
+      const newNotifications = Object.entries(data)
+        .map(([id, notif]) => ({ id, ...notif }))
+        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-      notifications.forEach((notif) => {
-        const notifDiv = document.createElement("div");
-        notifDiv.className =
-          "d-flex align-items-start mb-3 p-2 bg-secondary rounded-3";
+      // Check for changes: only append notifications not in existingIds
+      const hasChanges = newNotifications.some((n) => !existingIds.has(n.id));
+      if (!hasChanges) return; // Nothing new, skip
 
-        notifDiv.innerHTML = `
-                <i class="bi bi-bell-fill text-light me-3" style="font-size: 1.5rem"></i>
-                <div>
-                    <small class="text-light">${notif.timestamp}</small>
-                    <p class="text-light mb-0">${notif.message}</p>
-                </div>
-            `;
-
-        container.appendChild(notifDiv);
-      });
+      notifications = newNotifications;
+      loadedCount = 0;
+      container.innerHTML = ""; // Clear container
+      existingIds = new Set(); // Reset existing IDs
+      loadMoreNotifications(); // Load first batch
     } catch (error) {
       console.error("Failed to fetch notifications:", error);
     }
   }
 
-  // Fetch notifications every 5 seconds
-  setInterval(fetchNotifications, 5000);
-  fetchNotifications(); // Fetch immediately on page load
+  function loadMoreNotifications() {
+    if (loadedCount >= notifications.length) return;
+
+    spinner.style.display = "block";
+
+    setTimeout(() => {
+      const nextBatch = notifications.slice(
+        loadedCount,
+        loadedCount + BATCH_SIZE
+      );
+      nextBatch.forEach((notif) => {
+        const notifDiv = document.createElement("div");
+        notifDiv.className =
+          "d-flex align-items-start mb-3 p-2 bg-secondary rounded-3";
+        notifDiv.innerHTML = `
+          <i class="bi bi-bell-fill text-light me-3" style="font-size: 1.5rem"></i>
+          <div>
+            <small class="text-light">${notif.timestamp}</small>
+            <p class="text-light mb-0">${notif.message}</p>
+          </div>
+        `;
+        container.appendChild(notifDiv);
+        existingIds.add(notif.id);
+      });
+
+      loadedCount += nextBatch.length;
+      spinner.style.display = "none";
+    }, 300);
+  }
+
+  // Detect scroll to bottom
+  container.addEventListener("scroll", () => {
+    if (
+      container.scrollTop + container.clientHeight >=
+      container.scrollHeight - 10
+    ) {
+      loadMoreNotifications();
+    }
+  });
+
+  // Initial fetch
+  fetchAllNotifications();
+
+  // Refresh notifications every 5 seconds
+  setInterval(fetchAllNotifications, 5000);
 </script>
 
 <script>
