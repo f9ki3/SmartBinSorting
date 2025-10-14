@@ -22,38 +22,22 @@ def static_files(filename):
 FIREBASE_SETTINGS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/settings.json"
 FIREBASE_BINS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/bins.json"
 FIREBASE_NOTIF_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/notifications.json"
-FIREBASE_NOTIF_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/notifications.json"
+FIREBASE_SMS_URL = "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/sms-number.json"
+
+# SMS API
+SMS_API_URL = "https://sms.iprogtech.com/api/v1/sms_messages"
+SMS_API_TOKEN = "3c0ca3aa1015545b917440f1b6418d429fe56f0c"
 
 previous_alerts = {}  # Store previous alert state to only alert on change
 
-def get_bin_percentage(bin_cm, empty=25, full=5):
-    """
-    Convert sensor distance to fill percentage.
-    - 25 cm = 0% full (empty)
-    - 5 cm = 100% full
-    - Linear mapping in between
-    - Values above empty → 0%
-    - Values below full → 100%
-    """
-    if bin_cm >= empty:
-        return 0
-    elif bin_cm <= full:
-        return 100
-    else:
-        percent = ((empty - bin_cm) / (empty - full)) * 100
-        return round(percent)
+def get_bin_percentage(cm):
+    # Example logic
+    MAX_HEIGHT = 25
+    percent = 100 - int((cm / MAX_HEIGHT) * 100)
+    return max(0, min(100, percent))
 
-def log_notification(bin_name, alert_type, percent):
-    """Log a notification to Firebase"""
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message = f"{bin_name} is {alert_type} ({percent}%)"
-    notif_data = {"timestamp": timestamp, "message": message}
-
-    try:
-        requests.post(FIREBASE_NOTIF_URL, json=notif_data)
-        print(f"Logged notification: {message}")
-    except Exception as e:
-        print("Failed to log notification:", e)
+def log_notification(friendly_name, alert_type, percent):
+    print(f"LOG: {friendly_name} is {alert_type.upper()} ({percent}%)")
         
 BIN_MAPPING = {
     "bin1": "paper bin",
@@ -62,26 +46,47 @@ BIN_MAPPING = {
     "bin4": "metal bin"
 }
 
+def send_sms_alert(message, phone_number):
+    """Send SMS alert using iprogtech API"""
+    try:
+        payload = {
+            "message": message,
+            "phone_number": phone_number
+        }
+        headers = {"Content-Type": "application/json"}
+        url = f"{SMS_API_URL}?api_token={SMS_API_TOKEN}"
+        resp = requests.post(url, json=payload, headers=headers)
+        if resp.status_code == 200:
+            print(f"SMS sent to {phone_number}: {message}")
+        else:
+            print(f"Failed to send SMS ({resp.status_code}): {resp.text}")
+    except Exception as e:
+        print("❌ Error sending SMS:", e)
+
+
 def check_bins_alert():
     global previous_alerts
+
     while True:
         try:
-            # Fetch system notification settings
+            # Fetch system settings
             settings_resp = requests.get(FIREBASE_SETTINGS_URL)
             notifications_enabled = False
+            sms_enabled = False
             settings_data = {}
+
             if settings_resp.status_code == 200:
                 settings_data = settings_resp.json()
                 notifications_enabled = settings_data.get("system-notification", False)
+                sms_enabled = settings_data.get("sms-notification", False)
 
             if notifications_enabled:
-                # Fetch bin data
                 bins_resp = requests.get(FIREBASE_BINS_URL)
                 if bins_resp.status_code == 200:
                     bins_data = bins_resp.json()
 
                     for raw_bin, friendly_name in BIN_MAPPING.items():
-                        cm = bins_data.get(raw_bin, 25)  # Default empty
+                        cm = bins_data.get(raw_bin, 25)
                         percent = get_bin_percentage(cm)
                         alert_type = None
 
@@ -94,10 +99,10 @@ def check_bins_alert():
                         if previous_alerts.get(friendly_name) != alert_type and alert_type:
                             previous_alerts[friendly_name] = alert_type
 
-                            # Log notification using ONLY friendly name
+                            # Log the notification
                             log_notification(friendly_name, alert_type, percent)
 
-                            # Increment settings.notification counter
+                            # Increment Firebase notification counter
                             try:
                                 current_count = settings_data.get("notification", 0)
                                 updated_count = current_count + 1
@@ -105,15 +110,31 @@ def check_bins_alert():
                                 print(f"Updated notification count to {updated_count}")
                             except Exception as e:
                                 print("Failed to update notification count:", e)
+
+                            # ---- SEND SMS ALERT ----
+                            if sms_enabled:
+                                try:
+                                    sms_resp = requests.get(FIREBASE_SMS_URL)
+                                    if sms_resp.status_code == 200:
+                                        phone_data = sms_resp.json()
+                                        phone_number = phone_data.get("phone")
+
+                                        if phone_number:
+                                            msg = f" Smart Waste Management Alerts: {friendly_name} is {alert_type.upper()} ({percent}%)"
+                                            send_sms_alert(msg, phone_number)
+                                        else:
+                                            print("No phone number found in Firebase.")
+                                except Exception as e:
+                                    print("Error fetching phone number:", e)
+
                         elif alert_type is None:
                             previous_alerts[friendly_name] = None
 
         except Exception as e:
             print("Error checking bins:", e)
 
-        time.sleep(10)
+        time.sleep(3)
 
-        
 def start_alert_thread():
     thread = threading.Thread(target=check_bins_alert)
     thread.daemon = True
