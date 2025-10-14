@@ -27,6 +27,7 @@
           Settings
         </a>
         <a
+          id="notif-desktop"
           class="text-decoration-none text-light d-flex align-items-center gap-2 bell-icon position-relative"
           data-bs-toggle="offcanvas"
           data-bs-target="#staticBackdrop"
@@ -66,6 +67,7 @@
   <div class="container d-flex justify-content-around">
     <!-- Scan Button -->
     <a
+      id="notif-mobile"
       class="text-decoration-none text-light d-flex flex-column text-center bell-icon position-relative"
       data-bs-toggle="offcanvas"
       data-bs-target="#staticBackdrop"
@@ -268,25 +270,25 @@
 
   // Initial load
   updateNotificationCounter();
+</script>
 
+<script>
   document.addEventListener("DOMContentLoaded", () => {
-    // Select ALL <a> tags that open the same offcanvas
-    const notifLinks = document.querySelectorAll(
-      'a[data-bs-target="#staticBackdrop"]'
-    );
+    // Target both notif buttons by their IDs
+    const notifButtons = ["notif-desktop", "notif-mobile"];
 
-    notifLinks.forEach((link) => {
-      link.addEventListener("click", () => {
-        loadNotifications();
-      });
+    notifButtons.forEach((id) => {
+      const btn = document.getElementById(id);
+      if (btn) {
+        btn.addEventListener("click", () => {
+          // Reset scroll & reload notifications
+          const container = document.getElementById("notification-container");
+          container.innerHTML = ""; // clear previous notifications
+          loadedCount = 0;
+          allLoaded = false;
+          loadNotifications();
+        });
+      }
     });
-
-    // Optional: also reload when the offcanvas actually opens
-    const offcanvasEl = document.getElementById("staticBackdrop");
-    if (offcanvasEl) {
-      offcanvasEl.addEventListener("shown.bs.offcanvas", () => {
-        loadNotifications();
-      });
-    }
   });
 </script>
