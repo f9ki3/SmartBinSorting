@@ -94,7 +94,7 @@ void loop() {
   long d1 = measureDistance(trigPin1, echoPin1);
   long d2 = measureDistance(trigPin2, echoPin2);
 
-  Serial.printf("Bin3: %ld cm | Bin4: %ld cm\n", d1, d2);
+  Serial.printf("Bin1: %ld cm | Bin2: %ld cm\n", d1, d2);
 
   updateBins(d1, d2);       // Update bins immediately
   updateLastUpdate();        // Update last_update immediately

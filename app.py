@@ -5,6 +5,8 @@ import requests
 import threading
 import time
 import os
+import pytz
+
 
 app = Flask(__name__)
 app.secret_key = "ayfsdgkhoipdj"  # Needed for session & flash
@@ -34,28 +36,39 @@ def get_bin_percentage(cm):
     # Example logic
     MAX_HEIGHT = 25
     percent = 100 - int((cm / MAX_HEIGHT) * 100)
-    return max(5, min(100, percent))
+    return max(0, min(100, percent))
 
 def log_notification(friendly_name, alert_type, percent):
-    # Log locally
-    print(f"LOG: {friendly_name} is {alert_type.upper()} ({percent}%)")
+    """Logs a bin notification to Firebase with Manila timezone."""
     
-    # Prepare payload for Firebase
+    # Get current time in Manila
+    manila_tz = pytz.timezone("Asia/Manila")
+    current_time = datetime.now(manila_tz).strftime("%Y-%m-%d %I:%M:%S %p")
+
+    # Create message
+    message = f"{friendly_name} is {alert_type.upper()} ({percent}%)"
+
+    # Print locally
+    print(f"LOG: {message} at {current_time}")
+
+    # Data for Firebase
     data = {
-        "friendly_name": friendly_name,
-        "alert_type": alert_type.upper(),
-        "percent": percent
+        "bin_name": friendly_name,
+        "alert_type": alert_type,
+        "percentage": percent,
+        "message": message,
+        "timestamp": current_time
     }
 
     try:
         response = requests.post(FIREBASE_NOTIF_URL, json=data)
         if response.status_code == 200:
-            print("Notification logged to Firebase successfully.")
+            print("✅ Notification logged successfully.")
         else:
-            print(f"Failed to log to Firebase. Status code: {response.status_code}")
+            print(f"⚠️ Failed to log notification: {response.status_code} - {response.text}")
     except Exception as e:
-        print(f"Error sending notification to Firebase: {e}")
-        
+        print(f"❌ Error logging notification: {e}")
+
 BIN_MAPPING = {
     "bin1": "paper bin",
     "bin2": "general bin",
@@ -119,19 +132,14 @@ def check_bins_alert():
                             # Log the notification
                             log_notification(friendly_name, alert_type, percent)
 
-                            # Increment Firebase notification counter safely
+                            # Increment Firebase notification counter
                             try:
-                                # Fetch the latest count from Firebase
-                                current_count_resp = requests.get(FIREBASE_SETTINGS_URL)
-                                if current_count_resp.status_code == 200:
-                                    current_count_data = current_count_resp.json()
-                                    current_count = current_count_data.get("notification", 0)
-                                    updated_count = current_count + 1
-                                    requests.patch(FIREBASE_SETTINGS_URL, json={"notification": updated_count})
-                                    print(f"Updated notification count to {updated_count}")
+                                current_count = settings_data.get("notification", 0)
+                                updated_count = current_count + 1
+                                requests.patch(FIREBASE_SETTINGS_URL, json={"notification": updated_count})
+                                print(f"Updated notification count to {updated_count}")
                             except Exception as e:
                                 print("Failed to update notification count:", e)
-
 
                             # ---- SEND SMS ALERT ----
                             if sms_enabled:
@@ -162,11 +170,7 @@ def start_alert_thread():
     thread.daemon = True
     thread.start()
 
-# ✅ Place this right after defining start_alert_thread
-@app.before_request
-def start_background_thread():
-    start_alert_thread()
-    
+
 def get_correct_pin():
     try:
         response = requests.get(FIREBASE_SETTINGS_URL)
@@ -332,5 +336,8 @@ def sendDataArduino():
 # Run App
 # -----------------------
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    # Only start the thread once when using debug/reloader
+    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        start_alert_thread() 
+    app.run(debug=True, host='0.0.0.0', port=5000)
 

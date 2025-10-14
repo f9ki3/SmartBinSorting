@@ -153,7 +153,6 @@
     </div>
   </div>
 </div>
-
 <script>
   const container = document.getElementById("notification-container");
   const spinner = document.getElementById("loading-spinner");
@@ -162,6 +161,7 @@
   const BATCH_SIZE = 10;
   let allLoaded = false;
 
+  // Initial batch loader (for older notifications)
   async function loadNotifications() {
     if (allLoaded) return;
 
@@ -173,25 +173,12 @@
       const data = await response.json();
 
       if (!data.length) {
-        allLoaded = true; // No more notifications
+        allLoaded = true;
         spinner.style.display = "none";
         return;
       }
 
-      data.forEach((notif) => {
-        const notifDiv = document.createElement("div");
-        notifDiv.className =
-          "d-flex align-items-start mb-3 p-2 bg-secondary rounded-3";
-        notifDiv.innerHTML = `
-          <i class="bi bi-bell-fill text-light me-3" style="font-size: 1.5rem"></i>
-          <div>
-            <small class="text-light">${notif.timestamp}</small>
-            <p class="text-light mb-0">${notif.message}</p>
-          </div>
-        `;
-        container.appendChild(notifDiv);
-      });
-
+      data.forEach((notif) => appendNotification(notif));
       loadedCount += data.length;
     } catch (error) {
       console.error("Failed to load notifications:", error);
@@ -200,7 +187,50 @@
     }
   }
 
-  // Detect scroll to bottom
+  // Append a single notification element
+  function appendNotification(notif, prepend = false) {
+    // Prevent duplicates (in case it already exists)
+    if (document.getElementById(`notif-${notif.id}`)) return;
+
+    const notifDiv = document.createElement("div");
+    notifDiv.id = `notif-${notif.id}`;
+    notifDiv.className =
+      "d-flex align-items-start mb-3 p-2 bg-secondary rounded-3";
+    notifDiv.innerHTML = `
+      <i class="bi bi-bell-fill text-light me-3" style="font-size: 1.5rem"></i>
+      <div>
+        <small class="text-light">${notif.timestamp}</small>
+        <p class="text-light mb-0">${notif.message}</p>
+      </div>
+    `;
+
+    if (prepend) {
+      container.prepend(notifDiv);
+    } else {
+      container.appendChild(notifDiv);
+    }
+  }
+
+  // --- 🔴 Realtime Updates using Server-Sent Events ---
+  function initRealtimeUpdates() {
+    const eventSource = new EventSource("/notifications_stream");
+
+    eventSource.onmessage = function (event) {
+      const data = JSON.parse(event.data);
+      if (!Array.isArray(data)) return;
+
+      // Only prepend new ones (latest first)
+      data.reverse().forEach((notif) => appendNotification(notif, true));
+    };
+
+    eventSource.onerror = function (e) {
+      console.warn("⚠️ Connection lost, retrying in 5s...", e);
+      eventSource.close();
+      setTimeout(initRealtimeUpdates, 5000); // reconnect
+    };
+  }
+
+  // Detect scroll to bottom for lazy loading old notifications
   container.addEventListener("scroll", () => {
     if (
       container.scrollTop + container.clientHeight >=
@@ -210,8 +240,9 @@
     }
   });
 
-  // Initial load
+  // Load initial notifications and start realtime stream
   loadNotifications();
+  initRealtimeUpdates();
 </script>
 
 <script>
@@ -264,7 +295,7 @@
   });
 
   // Poll every 3 seconds
-  setInterval(updateNotificationCounter, 3000);
+  setInterval(updateNotificationCounter, 5000);
 
   // Initial load
   updateNotificationCounter();
