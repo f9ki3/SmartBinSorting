@@ -37,7 +37,24 @@ def get_bin_percentage(cm):
     return max(5, min(100, percent))
 
 def log_notification(friendly_name, alert_type, percent):
+    # Log locally
     print(f"LOG: {friendly_name} is {alert_type.upper()} ({percent}%)")
+    
+    # Prepare payload for Firebase
+    data = {
+        "friendly_name": friendly_name,
+        "alert_type": alert_type.upper(),
+        "percent": percent
+    }
+
+    try:
+        response = requests.post(FIREBASE_NOTIF_URL, json=data)
+        if response.status_code == 200:
+            print("Notification logged to Firebase successfully.")
+        else:
+            print(f"Failed to log to Firebase. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error sending notification to Firebase: {e}")
         
 BIN_MAPPING = {
     "bin1": "paper bin",
