@@ -306,10 +306,6 @@ def sendDataArduino():
 # Run App
 # -----------------------
 if __name__ == "__main__":
-    # Only start the thread once when using debug/reloader
-    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        start_alert_thread() 
-    # app.run(debug=True, host='0.0.0.0', port=5000)
-    app.run(debug=False)
-
+    start_alert_thread() 
+    app.run(debug=True, host='0.0.0.0', port=5000)
 
