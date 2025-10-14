@@ -33,10 +33,15 @@ SMS_API_TOKEN = "3c0ca3aa1015545b917440f1b6418d429fe56f0c"
 previous_alerts = {}  # Store previous alert state to only alert on change
 
 def get_bin_percentage(cm):
-    # Example logic
-    MAX_HEIGHT = 25
-    percent = 100 - int((cm / MAX_HEIGHT) * 100)
-    return max(5, min(100, percent))
+    MIN_CM = 5    # 100% full
+    MAX_CM = 25   # 0% full
+
+    # Clamp the value between MIN_CM and MAX_CM
+    cm = max(MIN_CM, min(MAX_CM, cm))
+
+    # Calculate percentage (smaller cm → higher percentage)
+    percent = int(((MAX_CM - cm) / (MAX_CM - MIN_CM)) * 100)
+    return percent
 
 def log_notification(friendly_name, alert_type, percent):
     """Logs a bin notification to Firebase with Manila timezone."""
