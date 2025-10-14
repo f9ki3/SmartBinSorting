@@ -163,7 +163,7 @@ def start_alert_thread():
     thread.start()
 
 # ✅ Place this right after defining start_alert_thread
-@app.before_first_request
+@app.before_request
 def start_background_thread():
     start_alert_thread()
     
