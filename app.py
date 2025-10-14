@@ -31,27 +31,10 @@ SMS_API_TOKEN = "3c0ca3aa1015545b917440f1b6418d429fe56f0c"
 previous_alerts = {}  # Store previous alert state to only alert on change
 
 def get_bin_percentage(cm):
-    """
-    Converts the distance (cm) to a percentage full.
-    5 cm -> 100%
-    MAX_HEIGHT -> 0%
-    """
-    MIN_DISTANCE = 5   # Distance corresponding to 100% full
-    MAX_HEIGHT = 25    # Distance corresponding to 0% full
-
-    # Clamp cm between MIN_DISTANCE and MAX_HEIGHT
-    cm = max(MIN_DISTANCE, min(MAX_HEIGHT, cm))
-
-    # Calculate percentage
-    percent = 100 - int(((cm - MIN_DISTANCE) / (MAX_HEIGHT - MIN_DISTANCE)) * 100)
-    return percent
-
-
-# def get_bin_percentage(cm):
-#     # Example logic
-#     MAX_HEIGHT = 25
-#     percent = 100 - int((cm / MAX_HEIGHT) * 100)
-#     return max(0, min(100, percent))
+    # Example logic
+    MAX_HEIGHT = 25
+    percent = 100 - int((cm / MAX_HEIGHT) * 100)
+    return max(0, min(100, percent))
 
 def log_notification(friendly_name, alert_type, percent):
     print(f"LOG: {friendly_name} is {alert_type.upper()} ({percent}%)")
