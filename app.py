@@ -102,14 +102,19 @@ def check_bins_alert():
                             # Log the notification
                             log_notification(friendly_name, alert_type, percent)
 
-                            # Increment Firebase notification counter
+                            # Increment Firebase notification counter safely
                             try:
-                                current_count = settings_data.get("notification", 0)
-                                updated_count = current_count + 1
-                                requests.patch(FIREBASE_SETTINGS_URL, json={"notification": updated_count})
-                                print(f"Updated notification count to {updated_count}")
+                                # Fetch the latest count from Firebase
+                                current_count_resp = requests.get(FIREBASE_SETTINGS_URL)
+                                if current_count_resp.status_code == 200:
+                                    current_count_data = current_count_resp.json()
+                                    current_count = current_count_data.get("notification", 0)
+                                    updated_count = current_count + 1
+                                    requests.patch(FIREBASE_SETTINGS_URL, json={"notification": updated_count})
+                                    print(f"Updated notification count to {updated_count}")
                             except Exception as e:
                                 print("Failed to update notification count:", e)
+
 
                             # ---- SEND SMS ALERT ----
                             if sms_enabled:
