@@ -19,8 +19,28 @@
       rel="stylesheet"
     />
     <style>
+      .form-control {
+        background-color: transparent !important;
+        color: white !important;
+      }
+
+      .input-group-text {
+        background-color: transparent !important;
+        color: white !important;
+      }
+
+      .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.8) !important; /* slightly lighter white */
+        opacity: 1; /* ensures it's visible in all browsers */
+      }
+
       .bg-secondary {
         background-color: rgb(42, 47, 51) !important;
+      }
+      @media (max-width: 768px) {
+        #logoutBtn {
+          display: block !important;
+        }
       }
     </style>
   </head>
@@ -31,10 +51,10 @@
     <div class="container">
       <h1 class="text-center mt-4">Settings</h1>
       <div class="row">
-        <div class="col-12 col-md-3"></div>
+        <div class="col-12 col-md-2"></div>
 
-        <div class="col-12 col-md-6">
-          <div class="card mb-5 bg-secondary text-light rounded-4 p-4">
+        <div class="col-12 col-md-8">
+          <div class="card bg-secondary text-light rounded-4 p-4">
             <!-- Title -->
             <h5 class="mb-4 fw-bolder">Configuration</h5>
 
@@ -114,9 +134,136 @@
                 updateSetting("system-notification", systemSwitch.checked);
               });
             </script>
+          </div>
 
-            <hr class="border-light my-4" />
+          <div class="card mt-3 bg-secondary text-light rounded-4 p-4">
+            <!-- Title -->
+            <h5 class="mb-4 fw-bolder">SMS Number</h5>
 
+            <!-- SMS Alert Switch -->
+            <div>
+              <label class="mb-2" for="smsNumber">Contact Number</label>
+              <input
+                id="smsNumber"
+                class="form-control text-light bg-transparent border-light"
+                placeholder="09*********"
+                type="text"
+              />
+              <button
+                type="button"
+                id="saveBtn"
+                class="btn mt-3 mb-3 w-100 btn-secondary"
+              >
+                Save
+              </button>
+            </div>
+            <script>
+              const firebaseURL =
+                "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/sms-number.json";
+
+              // Fetch and display the phone number
+              async function loadPhone() {
+                try {
+                  const res = await fetch(firebaseURL);
+                  const data = await res.json();
+
+                  if (data && data.phone) {
+                    document.getElementById("smsNumber").value = data.phone;
+                  }
+                } catch (err) {
+                  console.error("Error loading phone:", err);
+                }
+              }
+
+              // Update the phone number in Firebase
+              document
+                .getElementById("saveBtn")
+                .addEventListener("click", async () => {
+                  const phone = document
+                    .getElementById("smsNumber")
+                    .value.trim();
+
+                  if (!phone) {
+                    alert("Please enter a contact number.");
+                    return;
+                  }
+
+                  try {
+                    const res = await fetch(firebaseURL, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ phone: phone }),
+                    });
+
+                    if (res.ok) {
+                      alert("Phone number updated successfully!");
+                    } else {
+                      alert("Failed to update number.");
+                    }
+                  } catch (err) {
+                    console.error("Error updating phone:", err);
+                  }
+                });
+
+              // Load the phone when the page starts
+              loadPhone();
+            </script>
+
+            <script>
+              const firebaseUrl =
+                "https://smart-bin-1b802-default-rtdb.asia-southeast1.firebasedatabase.app/settings.json";
+
+              // Function to fetch current settings from Firebase
+              function fetchSettings() {
+                fetch(firebaseUrl)
+                  .then((res) => res.json())
+                  .then((data) => {
+                    if (data) {
+                      smsSwitch.checked = !!data["sms-notification"];
+                      systemSwitch.checked = !!data["system-notification"];
+                    }
+                  })
+                  .catch((err) =>
+                    console.error("Error fetching settings:", err)
+                  );
+              }
+
+              // Function to update a setting in Firebase
+              function updateSetting(key, value) {
+                const payload = {};
+                payload[key] = value;
+
+                fetch(firebaseUrl, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                })
+                  .then((res) => res.json())
+                  .then((data) => console.log(`Updated ${key} to`, value, data))
+                  .catch((err) =>
+                    console.error("Error updating Firebase:", err)
+                  );
+              }
+
+              // Get switch elements
+              const smsSwitch = document.getElementById("smsAlertSwitch");
+              const systemSwitch = document.getElementById("systemAlertSwitch");
+
+              // Load initial settings from Firebase
+              fetchSettings();
+
+              // Update Firebase when switches change
+              smsSwitch.addEventListener("change", () => {
+                updateSetting("sms-notification", smsSwitch.checked);
+              });
+
+              systemSwitch.addEventListener("change", () => {
+                updateSetting("system-notification", systemSwitch.checked);
+              });
+            </script>
+          </div>
+
+          <div class="card mt-3 mb-5 bg-secondary text-light rounded-4 p-4">
             <!-- Change Pincode Section -->
             <h5 class="mb-4 fw-bolder">Change Pincode</h5>
 
@@ -198,7 +345,7 @@
                 <button
                   type="submit"
                   id="saveBtn"
-                  class="btn mb-3 w-100 btn-success"
+                  class="btn mb-3 w-100 btn-secondary"
                 >
                   Save
                 </button>
@@ -207,7 +354,7 @@
                 <a
                   href="/logout"
                   id="logoutBtn"
-                  class="btn mb-3 w-100 btn-danger text-center"
+                  class="btn d-none mb-3 w-100 btn-danger text-center"
                 >
                   Logout
                 </a>
@@ -219,9 +366,6 @@
                 color: red;
                 font-size: 0.875rem;
                 margin-top: 4px;
-              }
-              .input-error {
-                border-color: red !important;
               }
             </style>
 
@@ -379,7 +523,7 @@
           }
         </style>
 
-        <div class="col-12 col-md-3"></div>
+        <div class="col-12 col-md-2"></div>
       </div>
     </div>
   </body>
