@@ -140,7 +140,11 @@ def start_alert_thread():
     thread.daemon = True
     thread.start()
 
-
+# ✅ Place this right after defining start_alert_thread
+@app.before_serving
+def start_background_thread():
+    start_alert_thread()
+    
 def get_correct_pin():
     try:
         response = requests.get(FIREBASE_SETTINGS_URL)
@@ -306,8 +310,5 @@ def sendDataArduino():
 # Run App
 # -----------------------
 if __name__ == "__main__":
-    # Only start the thread once when using debug/reloader
-    if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        start_alert_thread() 
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5000)
 
