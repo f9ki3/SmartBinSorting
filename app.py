@@ -36,7 +36,7 @@ def get_bin_percentage(cm):
     # Example logic
     MAX_HEIGHT = 25
     percent = 100 - int((cm / MAX_HEIGHT) * 100)
-    return max(0, min(100, percent))
+    return max(5, min(100, percent))
 
 def log_notification(friendly_name, alert_type, percent):
     """Logs a bin notification to Firebase with Manila timezone."""
