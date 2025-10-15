@@ -53,11 +53,11 @@ async function sendData(inputData) {
     data: { data: inputData },
     dataType: "json",
     success: function (response) {
-      console.log("Response from server:", response);
+      // console.log("Response from server:", response);
       if (response.success) {
         getAllData();
       } else {
-        alert("Error sending data: " + response.message);
+        // alert("Error sending data: " + response.message);
       }
     },
     error: function (xhr, status, error) {
