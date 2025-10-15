@@ -39,8 +39,8 @@ async function sendData(inputData) {
       await writer.write(encoder.encode(inputData + "\n"));
       console.log("Sent to Arduino:", inputData);
     } catch (err) {
-      console.error("Error sending to Arduino:", err);
-      alert("Failed to send data to Arduino.");
+      // console.error("Error sending to Arduino:", err);
+      // alert("Failed to send data to Arduino.");
     }
   } else {
     console.warn("Arduino not connected. Click 'Connect Arduino' first.");
